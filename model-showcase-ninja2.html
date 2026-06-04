@@ -114,7 +114,7 @@ model-viewer{width:100%;height:100%;--poster-color:transparent;outline:none}
     <div class="radar-ring"></div>
     <model-viewer id="viewer"
       src="模型GLB_optimized/web/赛博忍者 2-黄歧.glb"
-      camera-controls auto-rotate auto-rotate-delay="3000" rotation-per-second="6deg"
+      camera-controls rotation-per-second="6deg"
       disable-pan interaction-prompt="none" environment-image="neutral"
       exposure="1" shadow-intensity="0" shadow-softness="0"
       min-field-of-view="28deg" max-field-of-view="45deg"
@@ -137,7 +137,7 @@ model-viewer{width:100%;height:100%;--poster-color:transparent;outline:none}
       </div>
     </div>
     <div><div class="section-label">LIGHTING</div><div class="light-switch"><button class="light-btn is-active" data-env="neutral" data-expo="1" data-shadow="0">室内柔光</button><button class="light-btn" data-env="neutral" data-expo="1.4" data-shadow="0">室外亮光</button><button class="light-btn" data-env="neutral" data-expo="1.1" data-shadow="0">无阴影</button></div></div>
-    <div><div class="section-label">3D VIEW CONTROLS</div><div class="controls-row"><button class="ctrl-btn is-active" id="btnRotate"><span class="ctrl-icon">&#x27F3;</span>ROTATE</button><button class="ctrl-btn" id="btnPan" disabled><span class="ctrl-icon">&#x2725;</span>PAN</button><button class="ctrl-btn" id="btnZoom"><span class="ctrl-icon">&#x2295;</span>ZOOM</button><button class="ctrl-btn" id="btnReset"><span class="ctrl-icon">&#x2299;</span>RESET</button></div></div>
+    <div><div class="section-label">3D VIEW CONTROLS</div><div class="controls-row"><button class="ctrl-btn" id="btnRotate"><span class="ctrl-icon">&#x27F3;</span>ROTATE</button><button class="ctrl-btn" id="btnPan" disabled><span class="ctrl-icon">&#x2725;</span>PAN</button><button class="ctrl-btn" id="btnZoom"><span class="ctrl-icon">&#x2295;</span>ZOOM</button><button class="ctrl-btn" id="btnReset"><span class="ctrl-icon">&#x2299;</span>RESET</button></div></div>
     <div class="meta-info">FORMAT: GLB<br>SIZE: 3.4 MB<br>BUILD: webp 1024 + Draco</div>
   </div>
 </div>
@@ -151,15 +151,15 @@ model-viewer{width:100%;height:100%;--poster-color:transparent;outline:none}
   (function s(){var i=0;function n(){if(i>=bootLines.length)return;var el=document.createElement('div');el.className='load-terminal-line visible';bootTerminal.appendChild(el);typeLine(el,bootLines[i],0,function(){i++;setTimeout(n,240)})}n()})();
   setInterval(function(){document.querySelectorAll('.load-status-val').forEach(function(v){if(Math.random()<.02){v.classList.add('flicker');setTimeout(function(){v.classList.remove('flicker')},150)}})},800);
   viewer.addEventListener('progress',function(e){var p=Math.round(e.detail.totalProgress*100);loadBar.style.width=p+'%';loadPct.textContent=p+'%'});
-  viewer.addEventListener('load',function(){loadBar.style.width='100%';loadPct.textContent='100%';setTimeout(function(){loadingScreen.classList.add('is-hidden');detailScreen.classList.add('is-on');document.querySelectorAll('.dim-fill').forEach(function(b,i){setTimeout(function(){b.style.width=b.getAttribute('data-pct')+'%'},i*150)})},500)});
+  viewer.addEventListener('load',function(){loadBar.style.width='100%';loadPct.textContent='100%';setTimeout(function(){loadingScreen.classList.add('is-hidden');detailScreen.classList.add('is-on');document.querySelectorAll('.dim-fill').forEach(function(b,i){setTimeout(function(){b.style.width=b.getAttribute('data-pct')+'%'},i*150)});setTimeout(function(){viewer.setAttribute('auto-rotate','');btnRotate.classList.add('is-active');autoRotate=true;setTimeout(function(){if(autoRotate){autoRotate=false;viewer.removeAttribute('auto-rotate');btnRotate.classList.remove('is-active')}},3000)},600)},500)});
   viewer.addEventListener('error',function(){loadPct.textContent='ERR';loadBar.style.background='#ff3939'});
   document.querySelectorAll('.light-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.light-btn').forEach(function(x){x.classList.remove('is-active')});b.classList.add('is-active');viewer.setAttribute('environment-image',b.dataset.env);viewer.setAttribute('exposure',b.dataset.expo);viewer.setAttribute('shadow-intensity',b.dataset.shadow)})});
-  var btnRotate=document.getElementById('btnRotate'),autoRotate=true;
-  btnRotate.addEventListener('click',function(){autoRotate=!autoRotate;if(autoRotate){viewer.setAttribute('auto-rotate','');viewer.setAttribute('auto-rotate-delay','3000');btnRotate.classList.add('is-active')}else{viewer.removeAttribute('auto-rotate');btnRotate.classList.remove('is-active')}});
+  var btnRotate=document.getElementById('btnRotate'),autoRotate=false;
+  btnRotate.addEventListener('click',function(){autoRotate=!autoRotate;if(autoRotate){viewer.setAttribute('auto-rotate','');btnRotate.classList.add('is-active')}else{viewer.removeAttribute('auto-rotate');btnRotate.classList.remove('is-active')}});
   viewer.addEventListener('camera-change',function(){if(autoRotate){autoRotate=false;viewer.removeAttribute('auto-rotate');btnRotate.classList.remove('is-active')}});
   var zoomLevels=[34,28],zoomIdx=0;
   document.getElementById('btnZoom').addEventListener('click',function(){zoomIdx=(zoomIdx+1)%zoomLevels.length;viewer.setAttribute('field-of-view',zoomLevels[zoomIdx]+'deg')});
-  document.getElementById('btnReset').addEventListener('click',function(){viewer.cameraOrbit='-25deg 75deg auto';viewer.fieldOfView='34deg';zoomIdx=0;autoRotate=true;viewer.setAttribute('auto-rotate','');viewer.setAttribute('auto-rotate-delay','3000');btnRotate.classList.add('is-active')});
+  document.getElementById('btnReset').addEventListener('click',function(){viewer.cameraOrbit='-25deg 75deg auto';viewer.fieldOfView='34deg';zoomIdx=0});
   viewer.addEventListener('camera-change',function(){try{var p=viewer.cameraOrbit.split(' ');if(p.length>=2&&p[1]!=='75deg'){p[1]='75deg';viewer.cameraOrbit=p.join(' ')}}catch(e){}});
 })();
 </script>
