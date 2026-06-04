@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARMORY NEXUS // CYBER NINJA MK-III</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#05080a;
+  --lime:#39ff14;
+  --lime-soft:#7cff5a;
+  --lime-dim:rgba(57,255,20,.18);
+  --lime-glow:rgba(57,255,20,.4);
+  --lime-glow-strong:rgba(57,255,20,.6);
+  --font:ui-monospace,"Cascadia Mono","Consolas","Courier New",monospace;
+  --grid-color:rgba(255,255,255,.03);
+  --grid-size:42px;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--lime);font-family:var(--font)}
+body{
+  background-image:
+    linear-gradient(var(--grid-color) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);
+  background-size:var(--grid-size) var(--grid-size);
+}
+
+/* ========== LOADING SCREEN ========== */
+#loadingScreen{
+  position:fixed;inset:0;z-index:100;
+  background:var(--bg);
+  background-image:
+    linear-gradient(var(--grid-color) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);
+  background-size:var(--grid-size) var(--grid-size);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity .8s ease,visibility .8s ease;
+}
+#loadingScreen.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
+
+.load-corner-tl{position:absolute;top:20px;left:24px;font-size:13px;letter-spacing:2px;color:var(--lime);opacity:.7}
+.load-corner-bl{position:absolute;bottom:16px;left:24px;font-size:11px;letter-spacing:1px;color:var(--lime);opacity:.5}
+.load-corner-br{position:absolute;bottom:16px;right:24px;font-size:11px;letter-spacing:1px;color:var(--lime);opacity:.5}
+
+.hex-logo{
+  width:100px;height:115px;position:relative;margin-bottom:24px;
+  filter:drop-shadow(0 0 18px var(--lime-glow)) drop-shadow(0 0 40px rgba(57,255,20,.2));
+}
+.hex-outer{
+  width:100px;height:115px;
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  background:linear-gradient(180deg,var(--lime),#1a8a0a);
+  display:flex;align-items:center;justify-content:center;
+}
+.hex-inner{
+  width:88px;height:101px;
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+}
+.hex-arrow{
+  width:0;height:0;
+  border-left:20px solid transparent;
+  border-right:20px solid transparent;
+  border-bottom:34px solid var(--lime);
+  filter:drop-shadow(0 0 8px var(--lime-glow));
+}
+
+.load-title{
+  font-size:clamp(28px,4vw,48px);font-weight:700;letter-spacing:clamp(8px,2vw,20px);
+  text-shadow:0 0 18px var(--lime-glow),0 0 40px rgba(57,255,20,.2);
+  margin-bottom:6px;
+}
+.load-subtitle{font-size:13px;letter-spacing:4px;color:var(--lime-soft);opacity:.7;margin-bottom:40px}
+
+.load-terminal{
+  position:absolute;top:40px;right:40px;
+  width:clamp(260px,22vw,360px);
+  border:1px solid var(--lime-dim);
+  background:rgba(5,8,10,.85);
+  padding:14px 16px;font-size:11px;line-height:1.8;
+}
+.load-terminal-header{
+  font-size:10px;letter-spacing:3px;color:var(--lime-soft);
+  border-bottom:1px solid var(--lime-dim);padding-bottom:6px;margin-bottom:8px;
+}
+.load-terminal-line{opacity:0;white-space:pre}
+.load-terminal-line.visible{opacity:1}
+
+.load-status{
+  position:absolute;right:40px;bottom:100px;
+  width:clamp(220px,18vw,300px);
+  border:1px solid var(--lime-dim);
+  background:rgba(5,8,10,.85);
+  padding:12px 16px;font-size:11px;line-height:1.9;
+}
+.load-status-header{
+  font-size:10px;letter-spacing:3px;color:var(--lime-soft);
+  border-bottom:1px solid var(--lime-dim);padding-bottom:6px;margin-bottom:6px;
+}
+.load-status-row{display:flex;justify-content:space-between}
+.load-status-label{color:var(--lime-soft);opacity:.6}
+.load-status-val{color:var(--lime)}
+
+.load-progress-wrap{
+  position:absolute;bottom:50px;left:50%;transform:translateX(-50%);
+  width:clamp(300px,50vw,600px);display:flex;align-items:center;gap:14px;
+}
+.load-progress-label{font-size:12px;letter-spacing:3px;white-space:nowrap}
+.load-progress-track{
+  flex:1;height:6px;background:var(--lime-dim);border-radius:3px;overflow:hidden;
+  box-shadow:inset 0 0 4px rgba(57,255,20,.1);
+}
+.load-progress-fill{
+  width:0%;height:100%;
+  background:linear-gradient(90deg,var(--lime),var(--lime-soft));
+  border-radius:3px;
+  box-shadow:0 0 10px var(--lime-glow);
+  transition:width .15s linear;
+}
+.load-progress-pct{font-size:14px;font-weight:700;min-width:42px;text-align:right;
+  text-shadow:0 0 8px var(--lime-glow);
+}
+
+/* ========== DETAIL SCREEN ========== */
+#detailScreen{
+  position:fixed;inset:0;z-index:50;
+  display:flex;
+  opacity:0;visibility:hidden;
+  transition:opacity .8s ease .3s,visibility .8s ease .3s;
+}
+#detailScreen.is-on{opacity:1;visibility:visible}
+
+.detail-left{
+  flex:1;position:relative;display:flex;align-items:center;justify-content:center;
+  min-width:0;
+}
+
+.radar-ring{
+  position:absolute;width:min(70%,500px);aspect-ratio:1;border-radius:50%;
+  border:1px dashed rgba(57,255,20,.15);
+  box-shadow:0 0 60px rgba(57,255,20,.06),inset 0 0 60px rgba(57,255,20,.04);
+  pointer-events:none;
+}
+.radar-ring::before{
+  content:'';position:absolute;inset:12%;border-radius:50%;
+  border:1px solid rgba(57,255,20,.08);
+}
+.radar-ring::after{
+  content:'';position:absolute;inset:28%;border-radius:50%;
+  border:1px dashed rgba(57,255,20,.06);
+}
+.glow-platform{
+  position:absolute;bottom:8%;left:50%;transform:translateX(-50%);
+  width:min(60%,420px);height:60px;
+  background:radial-gradient(ellipse at center,rgba(57,255,20,.18) 0%,rgba(57,255,20,.04) 50%,transparent 80%);
+  border-radius:50%;pointer-events:none;
+  filter:blur(4px);
+}
+
+model-viewer{
+  width:100%;height:100%;
+  --poster-color:transparent;
+  outline:none;
+}
+
+.detail-right{
+  width:clamp(340px,36vw,480px);
+  border-left:1px solid var(--lime-dim);
+  background:rgba(5,8,10,.92);
+  overflow-y:auto;padding:32px 28px;
+  display:flex;flex-direction:column;gap:20px;
+}
+.detail-right::-webkit-scrollbar{width:4px}
+.detail-right::-webkit-scrollbar-track{background:transparent}
+.detail-right::-webkit-scrollbar-thumb{background:var(--lime-dim);border-radius:2px}
+
+.panel-title{
+  font-size:clamp(22px,2.4vw,32px);font-weight:700;letter-spacing:6px;
+  text-shadow:0 0 18px var(--lime-glow),0 0 40px rgba(57,255,20,.15);
+  line-height:1.2;
+}
+.panel-subtitle{font-size:12px;letter-spacing:4px;color:var(--lime-soft);opacity:.7}
+.panel-author{font-size:11px;letter-spacing:3px;color:var(--lime);opacity:.5;text-align:center}
+
+.section-label{
+  font-size:10px;letter-spacing:3px;color:var(--lime-soft);
+  border-bottom:1px solid var(--lime-dim);padding-bottom:4px;margin-bottom:8px;
+}
+.origin-text{font-size:12px;line-height:1.9;color:rgba(57,255,20,.75)}
+
+.dims-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px}
+.dim-item{display:flex;flex-direction:column;gap:4px}
+.dim-header{display:flex;justify-content:space-between;align-items:baseline}
+.dim-label{font-size:10px;letter-spacing:2px;color:var(--lime-soft)}
+.dim-label-cn{font-size:9px;color:var(--lime);opacity:.4;margin-left:4px}
+.dim-pct{font-size:12px;font-weight:700;color:var(--lime);text-shadow:0 0 6px var(--lime-glow)}
+.dim-track{height:5px;background:var(--lime-dim);border-radius:2px;overflow:hidden}
+.dim-fill{
+  height:100%;border-radius:2px;
+  background:linear-gradient(90deg,var(--lime),var(--lime-soft));
+  box-shadow:0 0 6px var(--lime-glow);
+  transition:width 1s ease;
+}
+
+.light-switch{display:flex;gap:0;border:1px solid var(--lime-dim);border-radius:3px;overflow:hidden}
+.light-btn{
+  flex:1;padding:7px 0;font-family:var(--font);font-size:10px;letter-spacing:2px;
+  background:transparent;color:var(--lime-soft);border:none;cursor:pointer;
+  transition:background .2s,color .2s;
+}
+.light-btn:hover{background:rgba(57,255,20,.08)}
+.light-btn.is-active{background:var(--lime-dim);color:var(--lime);text-shadow:0 0 6px var(--lime-glow)}
+
+.controls-row{display:flex;gap:8px;flex-wrap:wrap}
+.ctrl-btn{
+  flex:1;min-width:70px;padding:8px 4px;
+  font-family:var(--font);font-size:9px;letter-spacing:2px;
+  background:rgba(57,255,20,.06);color:var(--lime-soft);
+  border:1px solid var(--lime-dim);border-radius:3px;cursor:pointer;
+  transition:background .2s,color .2s,box-shadow .2s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.ctrl-btn:hover{background:rgba(57,255,20,.14);color:var(--lime);box-shadow:0 0 10px rgba(57,255,20,.15)}
+.ctrl-btn.is-active{background:var(--lime-dim);color:var(--lime);box-shadow:0 0 12px rgba(57,255,20,.2)}
+.ctrl-btn[disabled]{opacity:.35;cursor:not-allowed;pointer-events:none}
+.ctrl-icon{font-size:16px;line-height:1}
+
+.meta-info{
+  margin-top:auto;padding-top:12px;border-top:1px solid var(--lime-dim);
+  font-size:10px;line-height:1.8;color:var(--lime);opacity:.35;letter-spacing:1px;
+}
+
+@media(max-width:800px){
+  #detailScreen{flex-direction:column}
+  .detail-left{min-height:50vh}
+  .detail-right{width:100%;border-left:none;border-top:1px solid var(--lime-dim)}
+  .load-terminal,.load-status{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== LOADING SCREEN ===== -->
+<div id="loadingScreen">
+  <div class="load-corner-tl">⊡ AN-7G</div>
+
+  <div class="hex-logo">
+    <div class="hex-outer">
+      <div class="hex-inner">
+        <div class="hex-arrow"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="load-title">ARMORY NEXUS</div>
+  <div class="load-subtitle">SECTOR 7-G // CLASSIFIED ACCESS</div>
+
+  <div class="load-terminal">
+    <div class="load-terminal-header">TERMINAL BOOT SEQUENCE</div>
+    <div class="load-terminal-line" data-delay="200">> SYSTEM INITIALIZATION ...... OK</div>
+    <div class="load-terminal-line" data-delay="500">> MEMORY CHECK .............. OK</div>
+    <div class="load-terminal-line" data-delay="800">> SECURE LINK ESTABLISHED ... OK</div>
+    <div class="load-terminal-line" data-delay="1100">> ENCRYPTION VERIFIED ....... OK</div>
+    <div class="load-terminal-line" data-delay="1400">> FIREWALL BYPASS ........... OK</div>
+    <div class="load-terminal-line" data-delay="1700">> DATABASE CONNECTED ........ OK</div>
+    <div class="load-terminal-line" data-delay="2000">> AUTHENTICATION ............ OK</div>
+    <div class="load-terminal-line" data-delay="2400">> ACCESS LEVEL .......... DELTA-7</div>
+    <div class="load-terminal-line" data-delay="2800">> WELCOME, USER</div>
+    <div class="load-terminal-line" data-delay="3200">> BOOT SEQUENCE COMPLETE</div>
+  </div>
+
+  <div class="load-status">
+    <div class="load-status-header">SYSTEM STATUS</div>
+    <div class="load-status-row"><span class="load-status-label">NETWORK:</span><span class="load-status-val">SECURE</span></div>
+    <div class="load-status-row"><span class="load-status-label">ENCRYPTION:</span><span class="load-status-val">AES-256</span></div>
+    <div class="load-status-row"><span class="load-status-label">LATENCY:</span><span class="load-status-val">12.4 MS</span></div>
+    <div class="load-status-row"><span class="load-status-label">THREAT LEVEL:</span><span class="load-status-val">MINIMAL</span></div>
+  </div>
+
+  <div class="load-progress-wrap">
+    <span class="load-progress-label">LOADING...</span>
+    <div class="load-progress-track"><div class="load-progress-fill" id="loadBar"></div></div>
+    <span class="load-progress-pct" id="loadPct">0%</span>
+  </div>
+
+  <div class="load-corner-bl">SYS.ID  AN-7G-X981</div>
+  <div class="load-corner-br">VERSION 1.2.3 // DELTA</div>
+</div>
+
+<!-- ===== DETAIL SCREEN ===== -->
+<div id="detailScreen">
+  <div class="detail-left">
+    <div class="radar-ring"></div>
+    <model-viewer
+      id="viewer"
+      src="模型GLB_optimized/web/赛博忍者.glb"
+      camera-controls
+      auto-rotate
+      auto-rotate-delay="0"
+      rotation-per-second="6deg"
+      disable-pan
+      interaction-prompt="none"
+      environment-image="neutral"
+      exposure="1"
+      shadow-intensity="0.6"
+      shadow-softness="0.8"
+      min-field-of-view="28deg"
+      max-field-of-view="42deg"
+      camera-orbit="-25deg 75deg auto">
+    </model-viewer>
+    <div class="glow-platform"></div>
+  </div>
+
+  <div class="detail-right">
+    <div>
+      <div class="panel-title">CYBER NINJA MK-III</div>
+      <div class="panel-subtitle">STEALTH INFILTRATION UNIT</div>
+    </div>
+
+    <div class="panel-author">:: BY 学生姓名 ::</div>
+
+    <div>
+      <div class="section-label">ORIGIN STORY</div>
+      <div class="origin-text">潜行于霓虹与阴影之间的渗透单元。机身覆以吸光复合装甲，能在数据洪流中隐去身形；一刃出鞘，便是一次干净利落的协议终止。它不为喧嚣而生，只在最安静处完成使命。</div>
+    </div>
+
+    <div>
+      <div class="section-label">CREATIVE METRICS</div>
+      <div class="dims-grid">
+        <div class="dim-item">
+          <div class="dim-header">
+            <span><span class="dim-label">COMPLETION</span><span class="dim-label-cn">完成度</span></span>
+            <span class="dim-pct">92%</span>
+          </div>
+          <div class="dim-track"><div class="dim-fill" data-pct="92"></div></div>
+        </div>
+        <div class="dim-item">
+          <div class="dim-header">
+            <span><span class="dim-label">DETAIL</span><span class="dim-label-cn">细节</span></span>
+            <span class="dim-pct">88%</span>
+          </div>
+          <div class="dim-track"><div class="dim-fill" data-pct="88"></div></div>
+        </div>
+        <div class="dim-item">
+          <div class="dim-header">
+            <span><span class="dim-label">CREATIVITY</span><span class="dim-label-cn">创意</span></span>
+            <span class="dim-pct">95%</span>
+          </div>
+          <div class="dim-track"><div class="dim-fill" data-pct="95"></div></div>
+        </div>
+        <div class="dim-item">
+          <div class="dim-header">
+            <span><span class="dim-label">DIFFICULTY</span><span class="dim-label-cn">难度</span></span>
+            <span class="dim-pct">85%</span>
+          </div>
+          <div class="dim-track"><div class="dim-fill" data-pct="85"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">LIGHTING</div>
+      <div class="light-switch">
+        <button class="light-btn is-active" data-env="neutral" data-expo="1" data-shadow="0.6">室内柔光</button>
+        <button class="light-btn" data-env="neutral" data-expo="1.4" data-shadow="0.9">室外亮光</button>
+        <button class="light-btn" data-env="neutral" data-expo="1.1" data-shadow="0">无阴影</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">3D VIEW CONTROLS</div>
+      <div class="controls-row">
+        <button class="ctrl-btn is-active" id="btnRotate">
+          <span class="ctrl-icon">⟳</span>ROTATE
+        </button>
+        <button class="ctrl-btn" id="btnPan" disabled>
+          <span class="ctrl-icon">✥</span>PAN
+        </button>
+        <button class="ctrl-btn" id="btnZoom">
+          <span class="ctrl-icon">⊕</span>ZOOM
+        </button>
+        <button class="ctrl-btn" id="btnReset">
+          <span class="ctrl-icon">⊙</span>RESET
+        </button>
+      </div>
+    </div>
+
+    <div class="meta-info">
+      FORMAT: GLB<br>
+      SIZE: 6.4 MB<br>
+      BUILD: 兼容优化版
+    </div>
+  </div>
+</div>
+
+<script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+<script>
+(function(){
+  const viewer = document.getElementById('viewer');
+  const loadBar = document.getElementById('loadBar');
+  const loadPct = document.getElementById('loadPct');
+  const loadingScreen = document.getElementById('loadingScreen');
+  const detailScreen = document.getElementById('detailScreen');
+
+  const termLines = document.querySelectorAll('.load-terminal-line');
+  termLines.forEach(function(line){
+    const delay = parseInt(line.getAttribute('data-delay'),10) || 0;
+    setTimeout(function(){ line.classList.add('visible'); }, delay);
+  });
+
+  viewer.addEventListener('progress', function(e){
+    const pct = Math.round(e.detail.totalProgress * 100);
+    loadBar.style.width = pct + '%';
+    loadPct.textContent = pct + '%';
+  });
+
+  viewer.addEventListener('load', function(){
+    loadBar.style.width = '100%';
+    loadPct.textContent = '100%';
+    setTimeout(function(){
+      loadingScreen.classList.add('is-hidden');
+      detailScreen.classList.add('is-on');
+      animateDimBars();
+    }, 400);
+  });
+
+  viewer.addEventListener('error', function(){
+    loadPct.textContent = 'ERR';
+    loadBar.style.background = '#ff3939';
+  });
+
+  function animateDimBars(){
+    document.querySelectorAll('.dim-fill').forEach(function(bar){
+      const pct = bar.getAttribute('data-pct');
+      setTimeout(function(){ bar.style.width = pct + '%'; }, 300);
+    });
+  }
+
+  document.querySelectorAll('.light-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.light-btn').forEach(function(b){ b.classList.remove('is-active'); });
+      btn.classList.add('is-active');
+      viewer.setAttribute('environment-image', btn.dataset.env);
+      viewer.setAttribute('exposure', btn.dataset.expo);
+      viewer.setAttribute('shadow-intensity', btn.dataset.shadow);
+    });
+  });
+
+  const btnRotate = document.getElementById('btnRotate');
+  let autoRotate = true;
+  btnRotate.addEventListener('click', function(){
+    autoRotate = !autoRotate;
+    if(autoRotate){
+      viewer.setAttribute('auto-rotate','');
+      btnRotate.classList.add('is-active');
+    } else {
+      viewer.removeAttribute('auto-rotate');
+      btnRotate.classList.remove('is-active');
+    }
+  });
+
+  const zoomLevels = [34, 30, 28];
+  let zoomIdx = 0;
+  document.getElementById('btnZoom').addEventListener('click', function(){
+    zoomIdx = (zoomIdx + 1) % zoomLevels.length;
+    viewer.setAttribute('field-of-view', zoomLevels[zoomIdx] + 'deg');
+  });
+
+  document.getElementById('btnReset').addEventListener('click', function(){
+    viewer.cameraOrbit = '-25deg 75deg auto';
+    viewer.fieldOfView = '34deg';
+    zoomIdx = 0;
+    if(!autoRotate){
+      autoRotate = true;
+      viewer.setAttribute('auto-rotate','');
+      btnRotate.classList.add('is-active');
+    }
+  });
+})();
+</script>
+</body>
+</html>

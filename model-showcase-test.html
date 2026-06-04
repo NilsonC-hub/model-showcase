@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARMORY NEXUS // EXO-PREDATOR (Draco 本地测试)</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#05080a;
+  --lime:#39ff14;
+  --lime-soft:#7cff5a;
+  --lime-dim:rgba(57,255,20,.18);
+  --lime-glow:rgba(57,255,20,.4);
+  --lime-glow-strong:rgba(57,255,20,.65);
+  --font:ui-monospace,"Cascadia Mono","Consolas","Courier New",monospace;
+  --grid-color:rgba(255,255,255,.03);
+  --grid-size:42px;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--lime);font-family:var(--font)}
+body{background-image:linear-gradient(var(--grid-color) 1px,transparent 1px),linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);background-size:var(--grid-size) var(--grid-size)}
+
+#loadingScreen{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s ease,visibility .8s ease}
+#loadingScreen.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
+.load-corner-tl{position:absolute;top:24px;left:28px;font-size:14px;letter-spacing:3px;color:var(--lime);opacity:.75;text-shadow:0 0 10px var(--lime-glow)}
+.load-corner-bl{position:absolute;bottom:18px;left:28px;font-size:11px;letter-spacing:2px;color:var(--lime);opacity:.45}
+.load-corner-br{position:absolute;bottom:18px;right:28px;font-size:11px;letter-spacing:2px;color:var(--lime);opacity:.45}
+
+.hex-logo{width:108px;height:124px;position:relative;margin-bottom:28px;filter:drop-shadow(0 0 20px var(--lime-glow)) drop-shadow(0 0 50px rgba(57,255,20,.15));animation:hex-pulse 2.5s ease-in-out infinite}
+@keyframes hex-pulse{0%,100%{filter:drop-shadow(0 0 20px var(--lime-glow)) drop-shadow(0 0 50px rgba(57,255,20,.15))}50%{filter:drop-shadow(0 0 32px var(--lime-glow-strong)) drop-shadow(0 0 70px rgba(57,255,20,.25))}}
+.hex-outer{width:108px;height:124px;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);background:linear-gradient(180deg,var(--lime),#1a8a0a);display:flex;align-items:center;justify-content:center}
+.hex-inner{width:94px;height:108px;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);background:var(--bg);display:flex;align-items:center;justify-content:center}
+.hex-arrow{width:0;height:0;border-left:22px solid transparent;border-right:22px solid transparent;border-bottom:36px solid var(--lime);filter:drop-shadow(0 0 10px var(--lime-glow))}
+
+.load-title{font-size:clamp(30px,4.5vw,52px);font-weight:700;letter-spacing:clamp(10px,2.5vw,24px);text-shadow:0 0 20px var(--lime-glow),0 0 50px rgba(57,255,20,.2);margin-bottom:8px}
+.load-subtitle{font-size:13px;letter-spacing:5px;color:var(--lime-soft);opacity:.65;margin-bottom:48px}
+
+.load-terminal{position:absolute;top:44px;right:44px;width:clamp(280px,24vw,380px);border:1px solid var(--lime-dim);background:rgba(5,8,10,.88);padding:16px 18px;font-size:11px;line-height:1.9;box-shadow:0 0 20px rgba(57,255,20,.04)}
+.load-terminal-header{font-size:10px;letter-spacing:4px;color:var(--lime-soft);border-bottom:1px solid var(--lime-dim);padding-bottom:8px;margin-bottom:10px;text-shadow:0 0 8px rgba(57,255,20,.3)}
+.load-terminal-line{white-space:pre;opacity:0;transition:opacity .08s}
+.load-terminal-line.visible{opacity:1}
+
+.load-status{position:absolute;right:44px;bottom:108px;width:clamp(240px,20vw,320px);border:1px solid var(--lime-dim);background:rgba(5,8,10,.88);padding:14px 18px;font-size:11px;line-height:2;box-shadow:0 0 20px rgba(57,255,20,.04)}
+.load-status-header{font-size:10px;letter-spacing:4px;color:var(--lime-soft);border-bottom:1px solid var(--lime-dim);padding-bottom:8px;margin-bottom:8px;text-shadow:0 0 8px rgba(57,255,20,.3)}
+.load-status-row{display:flex;justify-content:space-between}
+.load-status-label{color:var(--lime-soft);opacity:.55}
+.load-status-val{color:var(--lime)}
+.load-status-val.flicker{animation:val-flicker .15s steps(1)}
+@keyframes val-flicker{0%,100%{opacity:1}50%{opacity:.3}}
+
+.load-progress-wrap{position:absolute;bottom:56px;left:50%;transform:translateX(-50%);width:clamp(320px,52vw,640px);display:flex;align-items:center;gap:16px}
+.load-progress-label{font-size:12px;letter-spacing:4px;white-space:nowrap;text-shadow:0 0 8px var(--lime-glow)}
+.load-progress-track{flex:1;height:7px;background:var(--lime-dim);border-radius:4px;overflow:hidden;box-shadow:inset 0 0 6px rgba(57,255,20,.08);position:relative}
+.load-progress-fill{width:0%;height:100%;background:linear-gradient(90deg,var(--lime),var(--lime-soft));border-radius:4px;box-shadow:0 0 14px var(--lime-glow);transition:width .15s linear;position:relative}
+.load-progress-fill::after{content:'';position:absolute;right:0;top:50%;transform:translateY(-50%);width:18px;height:18px;border-radius:50%;background:var(--lime);box-shadow:0 0 16px var(--lime-glow-strong),0 0 30px rgba(57,255,20,.3)}
+.load-progress-pct{font-size:15px;font-weight:700;min-width:46px;text-align:right;text-shadow:0 0 10px var(--lime-glow)}
+
+#detailScreen{position:fixed;inset:0;z-index:50;display:flex;opacity:0;visibility:hidden;transition:opacity .7s ease .4s,visibility .7s ease .4s}
+#detailScreen.is-on{opacity:1;visibility:visible}
+.detail-left{flex:1;position:relative;display:flex;align-items:center;justify-content:center;min-width:0;overflow:hidden}
+.radar-ring{position:absolute;width:min(68%,480px);aspect-ratio:1;border-radius:50%;border:1px dashed rgba(57,255,20,.12);box-shadow:0 0 80px rgba(57,255,20,.05),inset 0 0 80px rgba(57,255,20,.03);pointer-events:none}
+.radar-ring::before{content:'';position:absolute;inset:14%;border-radius:50%;border:1px solid rgba(57,255,20,.06)}
+.radar-ring::after{content:'';position:absolute;inset:32%;border-radius:50%;border:1px dashed rgba(57,255,20,.05)}
+.glow-platform{position:absolute;bottom:6%;left:50%;transform:translateX(-50%);width:min(58%,400px);height:64px;background:radial-gradient(ellipse at center,rgba(57,255,20,.22) 0%,rgba(57,255,20,.06) 50%,transparent 80%);border-radius:50%;pointer-events:none;filter:blur(6px)}
+model-viewer{width:100%;height:100%;--poster-color:transparent;outline:none}
+.detail-right{width:clamp(360px,38vw,500px);border-left:1px solid var(--lime-dim);background:rgba(5,8,10,.92);overflow-y:auto;padding:36px 32px;display:flex;flex-direction:column;gap:22px}
+.detail-right::-webkit-scrollbar{width:4px}
+.detail-right::-webkit-scrollbar-track{background:transparent}
+.detail-right::-webkit-scrollbar-thumb{background:var(--lime-dim);border-radius:2px}
+.panel-title{font-size:clamp(24px,2.6vw,34px);font-weight:700;letter-spacing:7px;text-shadow:0 0 20px var(--lime-glow),0 0 50px rgba(57,255,20,.15);line-height:1.2}
+.panel-subtitle{font-size:12px;letter-spacing:5px;color:var(--lime-soft);opacity:.65}
+.panel-author{font-size:11px;letter-spacing:4px;color:var(--lime);opacity:.4;text-align:center}
+.section-label{font-size:10px;letter-spacing:4px;color:var(--lime-soft);border-bottom:1px solid var(--lime-dim);padding-bottom:6px;margin-bottom:10px;text-shadow:0 0 6px rgba(57,255,20,.2)}
+.origin-text{font-size:12px;line-height:2;color:rgba(57,255,20,.72)}
+.dims-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 22px}
+.dim-item{display:flex;flex-direction:column;gap:5px}
+.dim-header{display:flex;justify-content:space-between;align-items:baseline}
+.dim-label{font-size:10px;letter-spacing:3px;color:var(--lime-soft)}
+.dim-label-cn{font-size:9px;color:var(--lime);opacity:.35;margin-left:4px}
+.dim-pct{font-size:13px;font-weight:700;color:var(--lime);text-shadow:0 0 8px var(--lime-glow)}
+.dim-track{height:6px;background:var(--lime-dim);border-radius:3px;overflow:hidden}
+.dim-fill{width:0%;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--lime),var(--lime-soft));box-shadow:0 0 8px var(--lime-glow);transition:width 1.2s cubic-bezier(.22,.61,.36,1)}
+.light-switch{display:flex;gap:0;border:1px solid var(--lime-dim);border-radius:4px;overflow:hidden}
+.light-btn{flex:1;padding:8px 0;font-family:var(--font);font-size:10px;letter-spacing:3px;background:transparent;color:var(--lime-soft);border:none;cursor:pointer;transition:all .25s}
+.light-btn:hover{background:rgba(57,255,20,.06)}
+.light-btn.is-active{background:var(--lime-dim);color:var(--lime);text-shadow:0 0 8px var(--lime-glow);box-shadow:inset 0 0 12px rgba(57,255,20,.08)}
+.controls-row{display:flex;gap:10px;flex-wrap:wrap}
+.ctrl-btn{flex:1;min-width:74px;padding:10px 4px;font-family:var(--font);font-size:9px;letter-spacing:2px;background:rgba(57,255,20,.04);color:var(--lime-soft);border:1px solid var(--lime-dim);border-radius:4px;cursor:pointer;transition:all .25s;display:flex;flex-direction:column;align-items:center;gap:5px}
+.ctrl-btn:hover{background:rgba(57,255,20,.12);color:var(--lime);box-shadow:0 0 14px rgba(57,255,20,.12)}
+.ctrl-btn.is-active{background:var(--lime-dim);color:var(--lime);box-shadow:0 0 16px rgba(57,255,20,.18)}
+.ctrl-btn[disabled]{opacity:.3;cursor:not-allowed;pointer-events:none}
+.ctrl-icon{font-size:18px;line-height:1}
+.meta-info{margin-top:auto;padding-top:14px;border-top:1px solid var(--lime-dim);font-size:10px;line-height:2;color:var(--lime);opacity:.3;letter-spacing:1px}
+@media(max-width:820px){#detailScreen{flex-direction:column}.detail-left{min-height:55vh}.detail-right{width:100%;border-left:none;border-top:1px solid var(--lime-dim)}.load-terminal,.load-status{display:none}}
+</style>
+</head>
+<body>
+
+<div id="loadingScreen">
+  <div class="load-corner-tl">&#x22A1; AN-7G</div>
+  <div class="hex-logo"><div class="hex-outer"><div class="hex-inner"><div class="hex-arrow"></div></div></div></div>
+  <div class="load-title">ARMORY NEXUS</div>
+  <div class="load-subtitle">SECTOR 7-G // CLASSIFIED ACCESS</div>
+  <div class="load-terminal" id="bootTerminal"><div class="load-terminal-header">TERMINAL BOOT SEQUENCE</div></div>
+  <div class="load-status">
+    <div class="load-status-header">SYSTEM STATUS</div>
+    <div class="load-status-row"><span class="load-status-label">NETWORK:</span><span class="load-status-val">SECURE</span></div>
+    <div class="load-status-row"><span class="load-status-label">ENCRYPTION:</span><span class="load-status-val">AES-256</span></div>
+    <div class="load-status-row"><span class="load-status-label">LATENCY:</span><span class="load-status-val">12.4 MS</span></div>
+    <div class="load-status-row"><span class="load-status-label">THREAT LEVEL:</span><span class="load-status-val">MINIMAL</span></div>
+  </div>
+  <div class="load-progress-wrap">
+    <span class="load-progress-label">LOADING...</span>
+    <div class="load-progress-track"><div class="load-progress-fill" id="loadBar"></div></div>
+    <span class="load-progress-pct" id="loadPct">0%</span>
+  </div>
+  <div class="load-corner-bl">SYS.ID  AN-7G-X981</div>
+  <div class="load-corner-br">VERSION 1.2.3 // DELTA</div>
+</div>
+
+<div id="detailScreen">
+  <div class="detail-left">
+    <div class="radar-ring"></div>
+    <model-viewer id="viewer"
+      src="模型GLB_optimized/web/外骨骼捕食者-杨琪帆.glb"
+      camera-controls auto-rotate auto-rotate-delay="0" rotation-per-second="6deg"
+      disable-pan interaction-prompt="none" environment-image="neutral"
+      exposure="1" shadow-intensity="0.6" shadow-softness="0.8"
+      min-field-of-view="28deg" max-field-of-view="45deg"
+      min-camera-orbit="auto 75deg auto" max-camera-orbit="auto 75deg auto"
+      camera-orbit="-25deg 75deg auto">
+    </model-viewer>
+    <div class="glow-platform"></div>
+  </div>
+  <div class="detail-right">
+    <div><div class="panel-title">EXO-PREDATOR</div><div class="panel-subtitle">BIOMECHANICAL HUNTER UNIT</div></div>
+    <div class="panel-author">:: BY 杨琪帆 ::</div>
+    <div><div class="section-label">ORIGIN STORY</div><div class="origin-text">仿生外骨骼与猎杀AI的完美融合。自适应伪装涂装可随环境实时变色，关节液压系统赋予其超越生物极限的爆发力。它在等待中积蓄力量，在出击中终结一切。</div></div>
+    <div>
+      <div class="section-label">CREATIVE METRICS</div>
+      <div class="dims-grid">
+        <div class="dim-item"><div class="dim-header"><span><span class="dim-label">COMPLETION</span><span class="dim-label-cn">完成度</span></span><span class="dim-pct">88%</span></div><div class="dim-track"><div class="dim-fill" data-pct="88"></div></div></div>
+        <div class="dim-item"><div class="dim-header"><span><span class="dim-label">DETAIL</span><span class="dim-label-cn">细节</span></span><span class="dim-pct">93%</span></div><div class="dim-track"><div class="dim-fill" data-pct="93"></div></div></div>
+        <div class="dim-item"><div class="dim-header"><span><span class="dim-label">CREATIVITY</span><span class="dim-label-cn">创意</span></span><span class="dim-pct">90%</span></div><div class="dim-track"><div class="dim-fill" data-pct="90"></div></div></div>
+        <div class="dim-item"><div class="dim-header"><span><span class="dim-label">DIFFICULTY</span><span class="dim-label-cn">难度</span></span><span class="dim-pct">95%</span></div><div class="dim-track"><div class="dim-fill" data-pct="95"></div></div></div>
+      </div>
+    </div>
+    <div><div class="section-label">LIGHTING</div><div class="light-switch"><button class="light-btn is-active" data-env="neutral" data-expo="1" data-shadow="0.6">室内柔光</button><button class="light-btn" data-env="neutral" data-expo="1.4" data-shadow="0.9">室外亮光</button><button class="light-btn" data-env="neutral" data-expo="1.1" data-shadow="0">无阴影</button></div></div>
+    <div><div class="section-label">3D VIEW CONTROLS</div><div class="controls-row"><button class="ctrl-btn is-active" id="btnRotate"><span class="ctrl-icon">&#x27F3;</span>ROTATE</button><button class="ctrl-btn" id="btnPan" disabled><span class="ctrl-icon">&#x2725;</span>PAN</button><button class="ctrl-btn" id="btnZoom"><span class="ctrl-icon">&#x2295;</span>ZOOM</button><button class="ctrl-btn" id="btnReset"><span class="ctrl-icon">&#x2299;</span>RESET</button></div></div>
+    <div class="meta-info">FORMAT: GLB<br>SIZE: 5.1 MB<br>BUILD: webp 1024 + Draco</div>
+  </div>
+</div>
+
+<!-- 设置本地 Draco 解码器路径（必须在 model-viewer 加载之前） -->
+<script>
+window.ModelViewerElement = window.ModelViewerElement || {};
+window.ModelViewerElement.dracoDecoderLocation = 'draco/';
+</script>
+<script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+<script>
+(function(){
+  var viewer=document.getElementById('viewer'),loadBar=document.getElementById('loadBar'),loadPct=document.getElementById('loadPct'),loadingScreen=document.getElementById('loadingScreen'),detailScreen=document.getElementById('detailScreen'),bootTerminal=document.getElementById('bootTerminal');
+  var bootLines=['> SYSTEM INITIALIZATION ...... OK','> MEMORY CHECK .............. OK','> SECURE LINK ESTABLISHED ... OK','> ENCRYPTION VERIFIED ....... OK','> FIREWALL BYPASS ........... OK','> DATABASE CONNECTED ........ OK','> AUTHENTICATION ............ OK','> ACCESS LEVEL .......... DELTA-7','> WELCOME, USER','> BOOT SEQUENCE COMPLETE'];
+  function typeLine(el,text,i,cb){if(i<text.length){el.textContent+=text.charAt(i);setTimeout(function(){typeLine(el,text,i+1,cb)},18)}else if(cb)cb()}
+  (function s(){var i=0;function n(){if(i>=bootLines.length)return;var el=document.createElement('div');el.className='load-terminal-line visible';bootTerminal.appendChild(el);typeLine(el,bootLines[i],0,function(){i++;setTimeout(n,240)})}n()})();
+  setInterval(function(){document.querySelectorAll('.load-status-val').forEach(function(v){if(Math.random()<.02){v.classList.add('flicker');setTimeout(function(){v.classList.remove('flicker')},150)}})},800);
+  viewer.addEventListener('progress',function(e){var p=Math.round(e.detail.totalProgress*100);loadBar.style.width=p+'%';loadPct.textContent=p+'%'});
+  viewer.addEventListener('load',function(){loadBar.style.width='100%';loadPct.textContent='100%';setTimeout(function(){loadingScreen.classList.add('is-hidden');detailScreen.classList.add('is-on');document.querySelectorAll('.dim-fill').forEach(function(b,i){setTimeout(function(){b.style.width=b.getAttribute('data-pct')+'%'},i*150)})},500)});
+  viewer.addEventListener('error',function(){loadPct.textContent='ERR';loadBar.style.background='#ff3939'});
+  document.querySelectorAll('.light-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.light-btn').forEach(function(x){x.classList.remove('is-active')});b.classList.add('is-active');viewer.setAttribute('environment-image',b.dataset.env);viewer.setAttribute('exposure',b.dataset.expo);viewer.setAttribute('shadow-intensity',b.dataset.shadow)})});
+  var btnRotate=document.getElementById('btnRotate'),autoRotate=true;
+  btnRotate.addEventListener('click',function(){autoRotate=!autoRotate;if(autoRotate){viewer.setAttribute('auto-rotate','');btnRotate.classList.add('is-active')}else{viewer.removeAttribute('auto-rotate');btnRotate.classList.remove('is-active')}});
+  var zoomLevels=[34,28],zoomIdx=0;
+  document.getElementById('btnZoom').addEventListener('click',function(){zoomIdx=(zoomIdx+1)%zoomLevels.length;viewer.setAttribute('field-of-view',zoomLevels[zoomIdx]+'deg')});
+  document.getElementById('btnReset').addEventListener('click',function(){viewer.cameraOrbit='-25deg 75deg auto';viewer.fieldOfView='34deg';zoomIdx=0;if(!autoRotate){autoRotate=true;viewer.setAttribute('auto-rotate','');btnRotate.classList.add('is-active')}});
+  viewer.addEventListener('camera-change',function(){try{var p=viewer.cameraOrbit.split(' ');if(p.length>=2&&p[1]!=='75deg'){p[1]='75deg';viewer.cameraOrbit=p.join(' ')}}catch(e){}});
+})();
+</script>
+</body>
+</html>
