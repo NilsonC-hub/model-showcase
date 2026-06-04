@@ -113,10 +113,10 @@ model-viewer{width:100%;height:100%;--poster-color:transparent;outline:none}
   <div class="detail-left">
     <div class="radar-ring"></div>
     <model-viewer id="viewer"
-      src="模型GLB_optimized/web/外骨骼捕食者-杨琪帆.glb"
-      camera-controls auto-rotate auto-rotate-delay="0" rotation-per-second="6deg"
+      src="模型GLB_optimized/web/外骨骼捕食者 - 杨琪帆.glb"
+      camera-controls auto-rotate auto-rotate-delay="3000" rotation-per-second="6deg"
       disable-pan interaction-prompt="none" environment-image="neutral"
-      exposure="1" shadow-intensity="0.6" shadow-softness="0.8"
+      exposure="1" shadow-intensity="0" shadow-softness="0"
       min-field-of-view="28deg" max-field-of-view="45deg"
       min-camera-orbit="auto 75deg auto" max-camera-orbit="auto 75deg auto"
       camera-orbit="-25deg 75deg auto">
@@ -136,7 +136,7 @@ model-viewer{width:100%;height:100%;--poster-color:transparent;outline:none}
         <div class="dim-item"><div class="dim-header"><span><span class="dim-label">DIFFICULTY</span><span class="dim-label-cn">难度</span></span><span class="dim-pct">95%</span></div><div class="dim-track"><div class="dim-fill" data-pct="95"></div></div></div>
       </div>
     </div>
-    <div><div class="section-label">LIGHTING</div><div class="light-switch"><button class="light-btn is-active" data-env="neutral" data-expo="1" data-shadow="0.6">室内柔光</button><button class="light-btn" data-env="neutral" data-expo="1.4" data-shadow="0.9">室外亮光</button><button class="light-btn" data-env="neutral" data-expo="1.1" data-shadow="0">无阴影</button></div></div>
+    <div><div class="section-label">LIGHTING</div><div class="light-switch"><button class="light-btn is-active" data-env="neutral" data-expo="1" data-shadow="0">室内柔光</button><button class="light-btn" data-env="neutral" data-expo="1.4" data-shadow="0">室外亮光</button><button class="light-btn" data-env="neutral" data-expo="1.1" data-shadow="0">无阴影</button></div></div>
     <div><div class="section-label">3D VIEW CONTROLS</div><div class="controls-row"><button class="ctrl-btn is-active" id="btnRotate"><span class="ctrl-icon">&#x27F3;</span>ROTATE</button><button class="ctrl-btn" id="btnPan" disabled><span class="ctrl-icon">&#x2725;</span>PAN</button><button class="ctrl-btn" id="btnZoom"><span class="ctrl-icon">&#x2295;</span>ZOOM</button><button class="ctrl-btn" id="btnReset"><span class="ctrl-icon">&#x2299;</span>RESET</button></div></div>
     <div class="meta-info">FORMAT: GLB<br>SIZE: 7.9 MB<br>BUILD: webp 1024 + Draco</div>
   </div>
@@ -155,10 +155,11 @@ model-viewer{width:100%;height:100%;--poster-color:transparent;outline:none}
   viewer.addEventListener('error',function(){loadPct.textContent='ERR';loadBar.style.background='#ff3939'});
   document.querySelectorAll('.light-btn').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.light-btn').forEach(function(x){x.classList.remove('is-active')});b.classList.add('is-active');viewer.setAttribute('environment-image',b.dataset.env);viewer.setAttribute('exposure',b.dataset.expo);viewer.setAttribute('shadow-intensity',b.dataset.shadow)})});
   var btnRotate=document.getElementById('btnRotate'),autoRotate=true;
-  btnRotate.addEventListener('click',function(){autoRotate=!autoRotate;if(autoRotate){viewer.setAttribute('auto-rotate','');btnRotate.classList.add('is-active')}else{viewer.removeAttribute('auto-rotate');btnRotate.classList.remove('is-active')}});
+  btnRotate.addEventListener('click',function(){autoRotate=!autoRotate;if(autoRotate){viewer.setAttribute('auto-rotate','');viewer.setAttribute('auto-rotate-delay','3000');btnRotate.classList.add('is-active')}else{viewer.removeAttribute('auto-rotate');btnRotate.classList.remove('is-active')}});
+  viewer.addEventListener('camera-change',function(){if(autoRotate){autoRotate=false;viewer.removeAttribute('auto-rotate');btnRotate.classList.remove('is-active')}});
   var zoomLevels=[34,28],zoomIdx=0;
   document.getElementById('btnZoom').addEventListener('click',function(){zoomIdx=(zoomIdx+1)%zoomLevels.length;viewer.setAttribute('field-of-view',zoomLevels[zoomIdx]+'deg')});
-  document.getElementById('btnReset').addEventListener('click',function(){viewer.cameraOrbit='-25deg 75deg auto';viewer.fieldOfView='34deg';zoomIdx=0;if(!autoRotate){autoRotate=true;viewer.setAttribute('auto-rotate','');btnRotate.classList.add('is-active')}});
+  document.getElementById('btnReset').addEventListener('click',function(){viewer.cameraOrbit='-25deg 75deg auto';viewer.fieldOfView='34deg';zoomIdx=0;autoRotate=true;viewer.setAttribute('auto-rotate','');viewer.setAttribute('auto-rotate-delay','3000');btnRotate.classList.add('is-active')});
   viewer.addEventListener('camera-change',function(){try{var p=viewer.cameraOrbit.split(' ');if(p.length>=2&&p[1]!=='75deg'){p[1]='75deg';viewer.cameraOrbit=p.join(' ')}}catch(e){}});
 })();
 </script>
