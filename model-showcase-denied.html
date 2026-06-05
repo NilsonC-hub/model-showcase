@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MODEL VAULT // ACCESS DENIED</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#070708;--lime:#caff38;--lime-soft:#d8ff6a;--lime-dim:rgba(202,255,56,.16);--lime-glow:rgba(202,255,56,.4);--lime-glow-strong:rgba(202,255,56,.62);--red:#ff3939;--red-glow:rgba(255,57,57,.45);--muted:rgba(244,241,232,.6);--font:ui-monospace,"Cascadia Mono","Consolas","Courier New",monospace;--grid-color:rgba(244,241,232,.035);--grid-size:44px}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--lime);font-family:var(--font)}
+body{background-image:radial-gradient(circle at 18% 16%,rgba(202,255,56,.06),transparent 30%),linear-gradient(var(--grid-color) 1px,transparent 1px),linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);background-size:auto,var(--grid-size) var(--grid-size),var(--grid-size) var(--grid-size)}
+#loadingScreen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.load-corner-tl{position:absolute;top:24px;left:28px;font-size:14px;letter-spacing:3px;color:var(--lime);opacity:.75;text-shadow:0 0 10px var(--lime-glow)}
+.load-corner-bl{position:absolute;bottom:18px;left:28px;font-size:11px;letter-spacing:2px;color:var(--muted)}
+.load-corner-br{position:absolute;bottom:18px;right:28px;font-size:11px;letter-spacing:2px;color:var(--muted)}
+.hex-logo{width:130px;height:150px;margin-bottom:28px;animation:hex-pulse 2.8s ease-in-out infinite}
+@keyframes hex-pulse{0%,100%{filter:drop-shadow(0 0 8px rgba(202,255,56,.7)) drop-shadow(0 0 24px rgba(202,255,56,.3))}50%{filter:drop-shadow(0 0 16px rgba(202,255,56,.95)) drop-shadow(0 0 48px rgba(202,255,56,.5))}}
+.hex-logo.is-denied{animation:hex-denied 1s ease-out forwards}
+@keyframes hex-denied{0%{filter:drop-shadow(0 0 8px rgba(202,255,56,.7))}100%{filter:drop-shadow(0 0 16px rgba(255,57,57,.9)) drop-shadow(0 0 40px rgba(255,57,57,.4))}}
+.load-title{font-size:clamp(30px,4.5vw,52px);font-weight:700;letter-spacing:clamp(10px,2.5vw,24px);color:var(--lime);text-shadow:0 0 20px var(--lime-glow),0 0 50px rgba(202,255,56,.2);margin-bottom:8px;transition:color .5s,text-shadow .5s}
+.load-title.is-denied{color:var(--red);text-shadow:0 0 20px var(--red-glow),0 0 50px rgba(255,57,57,.2)}
+.load-subtitle{font-size:13px;letter-spacing:5px;color:var(--lime-soft);opacity:.65;margin-bottom:48px;transition:color .5s}
+.load-subtitle.is-denied{color:#ff7070}
+.load-terminal{position:absolute;top:44px;right:44px;width:clamp(280px,24vw,380px);border:1px solid var(--lime-dim);background:rgba(7,7,8,.88);padding:16px 18px;font-size:11px;line-height:1.9;color:var(--lime-soft)}
+.load-terminal-header{font-size:10px;letter-spacing:4px;color:var(--lime);border-bottom:1px solid var(--lime-dim);padding-bottom:8px;margin-bottom:10px;text-shadow:0 0 8px var(--lime-glow)}
+.load-terminal-line{white-space:pre;opacity:0;transition:opacity .08s}
+.load-terminal-line.visible{opacity:1}
+.load-terminal-line.err{color:var(--red);text-shadow:0 0 8px var(--red-glow)}
+.load-status{position:absolute;right:44px;bottom:108px;width:clamp(240px,20vw,320px);border:1px solid var(--lime-dim);background:rgba(7,7,8,.88);padding:14px 18px;font-size:11px;line-height:2}
+.load-status-header{font-size:10px;letter-spacing:4px;color:var(--lime);border-bottom:1px solid var(--lime-dim);padding-bottom:8px;margin-bottom:8px}
+.load-status-row{display:flex;justify-content:space-between}
+.load-status-label{color:var(--muted)}
+.load-status-val{color:var(--lime)}
+.load-progress-wrap{position:absolute;bottom:56px;left:50%;transform:translateX(-50%);width:clamp(320px,52vw,640px);display:flex;align-items:center;gap:16px}
+.load-progress-label{font-size:12px;letter-spacing:4px;white-space:nowrap;color:var(--lime);text-shadow:0 0 8px var(--lime-glow)}
+.load-progress-track{flex:1;height:7px;background:var(--lime-dim);border-radius:4px;overflow:hidden;position:relative}
+.load-progress-fill{width:0%;height:100%;background:linear-gradient(90deg,var(--lime),var(--lime-soft));border-radius:4px;box-shadow:0 0 14px var(--lime-glow);transition:width .4s linear;position:relative}
+.load-progress-fill.is-denied{background:var(--red);box-shadow:0 0 14px var(--red-glow)}
+.load-progress-fill::after{content:'';position:absolute;right:0;top:50%;transform:translateY(-50%);width:18px;height:18px;border-radius:50%;background:var(--lime);box-shadow:0 0 16px var(--lime-glow-strong);transition:background .5s,box-shadow .5s}
+.load-progress-fill.is-denied::after{background:var(--red);box-shadow:0 0 16px var(--red-glow)}
+.load-progress-pct{font-size:15px;font-weight:700;min-width:60px;text-align:right;color:var(--lime);text-shadow:0 0 10px var(--lime-glow);transition:color .5s}
+.load-progress-pct.is-denied{color:var(--red);text-shadow:0 0 10px var(--red-glow)}
+.retry-link{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);font-size:11px;letter-spacing:3px;color:var(--muted);text-decoration:none;opacity:0;transition:opacity .5s,color .2s;pointer-events:none}
+.retry-link.is-on{opacity:1;pointer-events:auto}
+.retry-link:hover{color:var(--lime)}
+@media(max-width:820px){.load-terminal,.load-status{display:none}}
+</style>
+</head>
+<body>
+<div id="loadingScreen">
+  <div class="load-corner-tl">&#x22A1; AN-7G</div>
+  <div class="hex-logo" id="hexLogo">
+    <svg viewBox="0 0 130 150" xmlns="http://www.w3.org/2000/svg" width="130" height="150">
+      <defs>
+        <filter id="glow-soft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <filter id="glow-icon" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <polygon points="65,4 124,37 124,113 65,146 6,113 6,37" fill="none" stroke="#caff38" stroke-width="1.4" opacity="0.75" filter="url(#glow-soft)" id="hexOuter"/>
+      <polygon points="65,18 110,44 110,106 65,132 20,106 20,44" fill="none" stroke="#caff38" stroke-width="0.7" opacity="0.28"/>
+      <g stroke="#caff38" stroke-width="2" opacity="0.9" stroke-linecap="round" filter="url(#glow-soft)">
+        <line x1="58" y1="4" x2="72" y2="4"/><line x1="58" y1="146" x2="72" y2="146"/>
+        <line x1="6" y1="37" x2="6" y2="51"/><line x1="124" y1="37" x2="124" y2="51"/>
+        <line x1="6" y1="99" x2="6" y2="113"/><line x1="124" y1="99" x2="124" y2="113"/>
+      </g>
+      <g filter="url(#glow-icon)" fill="#caff38" id="hexIcon">
+        <polygon points="65,38 98,96 88,96 65,57 42,96 32,96" opacity="0.95"/>
+        <rect x="46" y="77" width="38" height="5" rx="1" opacity="0.85"/>
+        <circle cx="65" cy="102" r="3.5" opacity="0.6"/>
+      </g>
+    </svg>
+  </div>
+  <div class="load-title" id="loadTitle">MODEL VAULT</div>
+  <div class="load-subtitle" id="loadSubtitle">模型作品展示 // CLASSIFIED ACCESS</div>
+  <div class="load-terminal" id="bootTerminal"><div class="load-terminal-header">TERMINAL BOOT SEQUENCE</div></div>
+  <div class="load-status">
+    <div class="load-status-header">SYSTEM STATUS</div>
+    <div class="load-status-row"><span class="load-status-label">NETWORK:</span><span class="load-status-val">SECURE</span></div>
+    <div class="load-status-row"><span class="load-status-label">ENCRYPTION:</span><span class="load-status-val">AES-256</span></div>
+    <div class="load-status-row"><span class="load-status-label">LATENCY:</span><span class="load-status-val">12.4 MS</span></div>
+    <div class="load-status-row"><span class="load-status-label">THREAT LEVEL:</span><span class="load-status-val" id="threatVal">MINIMAL</span></div>
+  </div>
+  <div class="load-progress-wrap">
+    <span class="load-progress-label">VERIFYING...</span>
+    <div class="load-progress-track"><div class="load-progress-fill" id="loadBar"></div></div>
+    <span class="load-progress-pct" id="loadPct">0%</span>
+  </div>
+  <div class="load-corner-bl">SYS.ID  AN-7G-X981</div>
+  <div class="load-corner-br">VERSION 1.2.3 // DELTA</div>
+  <a class="retry-link" id="retryLink" href="student-showcase-lite.html">← 返回登录</a>
+</div>
+<script>
+(function(){
+  var bootTerminal=document.getElementById('bootTerminal');
+  var loadBar=document.getElementById('loadBar'),loadPct=document.getElementById('loadPct');
+  var loadTitle=document.getElementById('loadTitle'),loadSubtitle=document.getElementById('loadSubtitle');
+  var hexLogo=document.getElementById('hexLogo'),threatVal=document.getElementById('threatVal');
+  var retryLink=document.getElementById('retryLink');
+
+  var normalLines=[
+    '> SYSTEM INITIALIZATION ...... OK',
+    '> MEMORY CHECK .............. OK',
+    '> SECURE LINK ESTABLISHED ... OK',
+    '> ENCRYPTION VERIFIED ....... OK',
+    '> FIREWALL BYPASS ........... OK',
+    '> DATABASE CONNECTED ........ OK',
+    '> QUERYING VISITOR REGISTRY ..'
+  ];
+  var deniedLines=[
+    '> ENTITY NOT FOUND .......... !!',
+    '> CROSS-REFERENCE FAILED .... !!',
+    '> ACCESS DENIED ............. !!',
+    '> INTRUSION ALERT TRIGGERED'
+  ];
+
+  function typeLine(el,text,i,cb){
+    if(i<text.length){el.textContent+=text.charAt(i);setTimeout(function(){typeLine(el,text,i+1,cb)},16)}
+    else if(cb)setTimeout(cb,280);
+  }
+
+  function addLine(text,isErr,cb){
+    var el=document.createElement('div');
+    el.className='load-terminal-line visible'+(isErr?' err':'');
+    bootTerminal.appendChild(el);
+    typeLine(el,text,0,cb);
+  }
+
+  function runNormal(idx){
+    if(idx>=normalLines.length){
+      // progress to 72% then pause before denied
+      animateBar(72,function(){
+        setTimeout(runDenied,400);
+      });
+      return;
+    }
+    addLine(normalLines[idx],false,function(){runNormal(idx+1)});
+    if(idx<3) animateBar(Math.round((idx+1)/normalLines.length*60));
+  }
+
+  function runDenied(){
+    var i=0;
+    function next(){
+      if(i>=deniedLines.length){
+        triggerDenied();return;
+      }
+      addLine(deniedLines[i],true,function(){i++;next()});
+    }
+    next();
+  }
+
+  function animateBar(target,cb){
+    var cur=parseInt(loadBar.style.width)||0;
+    if(cur>=target){if(cb)cb();return;}
+    cur++;loadBar.style.width=cur+'%';loadPct.textContent=cur+'%';
+    setTimeout(function(){animateBar(target,cb)},18);
+  }
+
+  function triggerDenied(){
+    loadBar.classList.add('is-denied');
+    loadPct.classList.add('is-denied');
+    loadTitle.classList.add('is-denied');
+    loadSubtitle.classList.add('is-denied');
+    hexLogo.classList.add('is-denied');
+    threatVal.textContent='CRITICAL';
+    threatVal.style.color='#ff3939';
+    loadTitle.textContent='ACCESS DENIED';
+    loadSubtitle.textContent='ENTITY NOT RECOGNIZED';
+    animateBar(100);
+    setTimeout(function(){retryLink.classList.add('is-on')},800);
+  }
+
+  setTimeout(function(){runNormal(0)},300);
+})();
+</script>
+</body>
+</html>

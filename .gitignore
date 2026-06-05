@@ -1,0 +1,42 @@
+# 原始未压缩模型（体积过大，整个目录排除）
+模型GLB/
+
+# Claude Code 配置
+.claude/
+
+# 其他项目目录
+spaceship_web_demo/
+Meshy*/
+Meshy */
+
+# meshopt 压缩版（model-viewer 不支持）
+模型GLB_optimized/web_meshopt/
+
+# 已部署但不需要的 GLB（未在展示页中使用）
+模型GLB_optimized/web/牛奶盒房子.glb
+模型GLB_optimized/web/螳螂机器人.glb
+模型GLB_optimized/web/赛博忍者.glb
+模型GLB_optimized/web/外骨骼捕食者-杨琪帆_4K.glb
+
+# 旧版/废弃文件
+gitee-deploy/
+meshy_character_views/
+voxel-island.html
+模型展示index.html
+model-showcase.html
+model-showcase-v2.html
+model-showcase-test.html
+_draco-test.html
+登录页开发进度记录.html
+model-showcase-predator.html
+
+# 截图和临时文件
+*.jpeg
+.playwright-mcp/
+
+# 文档（不上线）
+*.md
+模型展示页_给Qwen的指令.md
+
+# shares 分享图（按需另行管理）
+shares/

@@ -1,0 +1,1702 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>学生 3D 作品展</title>
+  <!-- model-viewer 不在入口阶段加载，避免与 Spline 同时初始化两份 Three.js 造成载入卡顿。进入展示页时由 loadModelViewer() 动态注入。 -->
+  <script type="module" src="https://unpkg.com/@splinetool/viewer/build/spline-viewer.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090909;
+      --ink: #f4f1e8;
+      --muted: rgba(244, 241, 232, .64);
+      --faint: rgba(244, 241, 232, .16);
+      --line: rgba(244, 241, 232, .2);
+      --orange: #ff8a1f;
+      --lime: #caff38;
+      --stage: #17181c;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+      overflow-x: hidden;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 430px);
+      background:
+        radial-gradient(circle at 18% 18%, rgba(202,255,56,.08), transparent 28%),
+        radial-gradient(circle at 74% 52%, rgba(255,138,31,.11), transparent 34%),
+        linear-gradient(90deg, rgba(244,241,232,.045) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(244,241,232,.035) 1px, transparent 1px),
+        #070708;
+      background-size: auto, auto, 56px 56px, 56px 56px, auto;
+    }
+
+    .page.is-gate {
+      display: block;
+      position: fixed;
+      inset: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .page.is-gate .stage {
+      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .page.is-gate .info,
+    .page.is-gate .work-mark,
+    .page.is-gate .status,
+    .page.is-gate .hero-copy,
+    .page.is-gate .controls,
+    .page.is-gate .asset-radar,
+    .page.is-gate .stage-caption,
+    .page.is-gate .field-loader,
+    .page.is-gate .stage-vignette,
+    .page.is-gate .stage-rail {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .page.is-gate .field-loader {
+      visibility: hidden;
+    }
+
+    .stage {
+      position: relative;
+      min-height: 100vh;
+      overflow: hidden;
+      isolation: isolate;
+      background:
+        radial-gradient(circle at 50% 40%, rgba(255,255,255,.16), transparent 31%),
+        radial-gradient(circle at 62% 54%, rgba(255,138,31,.16), transparent 34%),
+        linear-gradient(155deg, #23242a, #111216 52%, #050505);
+    }
+
+    .stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(255,255,255,.055) 1px, transparent 1px);
+      background-size: 100% 100%, 44px 44px, 44px 44px;
+      mask-image: radial-gradient(circle at 52% 48%, black, transparent 73%);
+    }
+
+    .stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, transparent 0 49%, rgba(202,255,56,.14) 50%, transparent 51%),
+        repeating-linear-gradient(180deg, rgba(255,255,255,.02) 0 1px, transparent 1px 8px);
+      opacity: 0;
+      animation: none;
+    }
+
+    .page.gate-terminal-on .stage::after {
+      opacity: .22;
+      animation: scanSweep 7.5s linear infinite;
+    }
+
+    .gate-spotlight {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background:
+        radial-gradient(
+          circle at var(--spot-x, 46%) var(--spot-y, 48%),
+          rgba(255,255,255,.88) 0 3%,
+          rgba(255,255,255,.42) 7%,
+          rgba(255,255,255,.16) 13%,
+          transparent 24%
+        );
+      opacity: .8;
+      mix-blend-mode: screen;
+      transition: opacity .7s ease;
+    }
+
+    model-viewer {
+      width: 100%;
+      height: 100vh;
+      min-height: 680px;
+      background: transparent;
+      --poster-color: transparent;
+      filter: drop-shadow(0 34px 48px rgba(0,0,0,.46));
+    }
+
+    .page.is-gate #viewer {
+      min-height: 100vh;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .gate-visual {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: auto;
+      opacity: 0;
+      filter: none;
+      animation: gateRobotArrival 1.8s ease .2s both;
+      transition: opacity .95s ease;
+    }
+
+    .page.gate-terminal-on .gate-visual {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .page:not(.is-gate) .gate-visual {
+      display: none;
+    }
+
+    .gate-visual spline-viewer {
+      width: 100%;
+      height: 100%;
+      pointer-events: auto;
+    }
+
+    .visitor-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 8;
+      display: block;
+      padding: 0;
+      overflow: hidden;
+      pointer-events: none;
+      transition: opacity .72s ease, transform .72s ease, visibility .72s ease;
+    }
+
+    .visitor-gate.is-leaving {
+      opacity: 0;
+      transform: scale(1.02);
+      visibility: hidden;
+    }
+
+    .gate-panel {
+      position: absolute;
+      left: clamp(22px, 5vw, 72px);
+      bottom: clamp(34px, 8vh, 88px);
+      width: min(520px, 100%);
+      max-width: calc(100vw - 44px);
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+      pointer-events: auto;
+      opacity: 0;
+      transform: translateY(10px);
+      color: var(--lime);
+      font: 700 clamp(18px, 2.3vw, 26px)/1.7 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      letter-spacing: .03em;
+      text-shadow: 0 0 18px rgba(202,255,56,.38);
+    }
+
+    .page.gate-terminal-on .gate-panel {
+      animation: gateTextIn .4s steps(1, end) forwards;
+    }
+
+    .gate-form {
+      display: grid;
+      gap: 8px;
+    }
+
+    .gate-line {
+      min-height: 1.7em;
+      text-transform: uppercase;
+    }
+
+    .gate-name-line {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      max-width: 100%;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .gate-name-line.is-ready {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .gate-prefix {
+      color: rgba(202,255,56,.82);
+    }
+
+    .gate-input {
+      flex: 1 1 10ch;
+      width: auto;
+      min-width: 0;
+      max-width: 100%;
+      height: 1.7em;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+      background: transparent;
+      color: var(--ink);
+      outline: 0;
+      caret-color: var(--lime);
+      font: inherit;
+      text-shadow: inherit;
+    }
+
+    .gate-input:focus {
+      box-shadow: none;
+    }
+
+    .gate-submit {
+      display: none;
+      width: max-content;
+      min-height: 0;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+      background: transparent;
+      color: var(--orange);
+      cursor: pointer;
+      font: inherit;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      text-shadow: 0 0 18px rgba(255,138,31,.42);
+    }
+
+    .gate-submit.is-visible {
+      display: inline-block;
+    }
+
+    .gate-submit:hover,
+    .gate-submit:focus {
+      color: var(--ink);
+      outline: 0;
+      filter: none;
+    }
+
+    .gate-pass {
+      min-height: 20px;
+      color: var(--orange);
+      font: inherit;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .gate-cursor {
+      display: inline-block;
+      width: .64em;
+      color: var(--lime);
+      animation: cursorBlink .82s steps(1, end) infinite;
+    }
+
+    /* —— 入口 HUD / 旧终端氛围 —— */
+    .gate-hud {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+      color: rgba(244,241,232,.34);
+      font: 700 11px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    .page:not(.is-gate) .gate-hud,
+    .page:not(.is-gate) .boot-log,
+    .page:not(.is-gate) .gate-ask {
+      display: none;
+    }
+
+    .hud-c {
+      position: absolute;
+      white-space: nowrap;
+    }
+
+    .hud-tl { left: 26px; top: 52px; }
+    .hud-tr { right: 26px; top: 52px; }
+    .hud-bl { left: 26px; bottom: 22px; transition: opacity .5s ease; }
+    .hud-br { right: 26px; bottom: 22px; }
+
+    .hud-c b {
+      color: rgba(202,255,56,.62);
+      font-weight: 700;
+    }
+
+    .page.gate-terminal-on .hud-bl {
+      opacity: 0;
+    }
+
+    .boot-log {
+      position: absolute;
+      right: clamp(20px, 3vw, 40px);
+      top: clamp(74px, 11vh, 110px);
+      z-index: 4;
+      margin: 0;
+      max-width: 44vw;
+      color: rgba(202,255,56,.46);
+      font: 600 clamp(10px, .95vw, 12.5px)/1.85 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      letter-spacing: .03em;
+      text-align: right;
+      white-space: pre;
+      pointer-events: none;
+      text-shadow: 0 0 12px rgba(202,255,56,.16);
+    }
+
+    .gate-ask {
+      position: absolute;
+      left: clamp(22px, 5vw, 64px);
+      top: clamp(15%, 21vh, 25%);
+      max-width: min(46vw, 520px);
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: .12em;
+      text-align: left;
+      pointer-events: none;
+      transition: opacity .6s ease, transform .6s ease;
+    }
+
+    .gate-ask.is-hidden {
+      opacity: 0;
+      transform: translateY(-12px);
+    }
+
+    .ask-line {
+      min-height: 1em;
+      color: var(--lime);
+      font: 800 clamp(28px, 4.4vw, 60px)/1.12 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      text-shadow: 0 0 36px rgba(202,255,56,.3), 0 6px 36px rgba(0,0,0,.5);
+    }
+
+    .ask-line.is-active::after {
+      content: "_";
+      margin-left: .06em;
+      color: var(--lime);
+      animation: cursorBlink .82s steps(1, end) infinite;
+    }
+
+    @keyframes gateRobotArrival {
+      0% { opacity: 0; }
+      32% { opacity: 1; }
+      100% { opacity: 1; }
+    }
+
+    @keyframes gateTextIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes scanSweep {
+      from { background-position: 0 -100vh, 0 0; }
+      to { background-position: 0 100vh, 0 0; }
+    }
+
+    @keyframes cursorBlink {
+      0%, 45% { opacity: 1; }
+      46%, 100% { opacity: 0; }
+    }
+
+    .stage-vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(0,0,0,.76), transparent 28%, transparent 65%, rgba(0,0,0,.5)),
+        linear-gradient(180deg, rgba(0,0,0,.5), transparent 23%, rgba(0,0,0,.56)),
+        repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 7px);
+      mix-blend-mode: normal;
+    }
+
+    .stage-rail {
+      position: absolute;
+      inset: auto 0 15vh;
+      z-index: 2;
+      height: 22vh;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, transparent 0 9%, rgba(202,255,56,.2) 9% 9.2%, transparent 9.2% 100%),
+        linear-gradient(90deg, transparent 0 62%, rgba(255,138,31,.24) 62% 62.4%, transparent 62.4% 100%),
+        repeating-linear-gradient(115deg, transparent 0 42px, rgba(255,255,255,.09) 42px 43px, transparent 43px 84px);
+      opacity: .34;
+      transform: skewY(-7deg);
+    }
+
+    .work-mark {
+      position: absolute;
+      left: clamp(20px, 3vw, 36px);
+      top: 24px;
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: rgba(244,241,232,.58);
+      font: 800 11px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    .work-mark::before {
+      content: "";
+      width: 26px;
+      height: 1px;
+      background: var(--lime);
+      box-shadow: 0 0 18px rgba(202,255,56,.65);
+    }
+
+    .asset-radar {
+      position: absolute;
+      right: clamp(20px, 3vw, 36px);
+      top: 74px;
+      z-index: 4;
+      width: 176px;
+      aspect-ratio: 1;
+      border: 1px solid rgba(202,255,56,.24);
+      border-radius: 50%;
+      color: rgba(202,255,56,.72);
+      font: 800 10px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      background:
+        radial-gradient(circle, transparent 0 25%, rgba(202,255,56,.12) 25.5% 26%, transparent 26.5% 51%, rgba(202,255,56,.09) 51.5% 52%, transparent 52.5%),
+        conic-gradient(from 24deg, rgba(202,255,56,.26), transparent 22%, transparent 100%);
+      box-shadow: inset 0 0 32px rgba(202,255,56,.08), 0 0 28px rgba(202,255,56,.05);
+    }
+
+    .asset-radar::before,
+    .asset-radar::after {
+      content: "";
+      position: absolute;
+      inset: 50% 10px auto;
+      height: 1px;
+      background: rgba(202,255,56,.18);
+    }
+
+    .asset-radar::after {
+      transform: rotate(90deg);
+    }
+
+    .radar-text {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 118px;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      line-height: 1.45;
+      white-space: pre-line;
+    }
+
+    .status {
+      position: absolute;
+      right: 24px;
+      top: 22px;
+      z-index: 4;
+      padding: 9px 12px;
+      border: 1px solid rgba(202,255,56,.22);
+      border-radius: 999px;
+      background: rgba(9,9,9,.56);
+      color: var(--lime);
+      font: 900 11px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      letter-spacing: .1em;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 20px rgba(202,255,56,.06);
+    }
+
+    .hero-copy {
+      position: absolute;
+      left: clamp(22px, 4vw, 58px);
+      bottom: clamp(104px, 10vw, 150px);
+      z-index: 4;
+      width: min(610px, calc(100% - 44px));
+      pointer-events: none;
+    }
+
+    .count {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--orange);
+      font: 900 12px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      letter-spacing: .2em;
+      margin-bottom: 13px;
+      text-transform: uppercase;
+    }
+
+    .count::before {
+      content: "";
+      width: 42px;
+      height: 1px;
+      background: var(--orange);
+      box-shadow: 0 0 16px rgba(255,138,31,.46);
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 8.5em;
+      font-size: clamp(48px, 7.4vw, 112px);
+      line-height: .9;
+      font-weight: 950;
+      letter-spacing: -.05em;
+      text-wrap: balance;
+      text-shadow: 0 12px 48px rgba(0,0,0,.58);
+    }
+
+    .student {
+      margin-top: 15px;
+      color: rgba(244,241,232,.9);
+      font-size: clamp(16px, 1.55vw, 23px);
+      font-weight: 900;
+      letter-spacing: .02em;
+    }
+
+    .model-note,
+    .tag-row {
+      margin-top: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font: 800 11px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .model-note span,
+    .tag-row span {
+      border: 1px solid rgba(244,241,232,.18);
+      border-radius: 999px;
+      padding: 8px 10px;
+      background: rgba(9,9,9,.45);
+      box-shadow: inset 0 0 18px rgba(255,255,255,.025);
+    }
+
+    .tag-row span:first-child {
+      border-color: rgba(202,255,56,.34);
+      color: var(--lime);
+    }
+
+    .stage-caption {
+      position: absolute;
+      left: clamp(22px, 4vw, 58px);
+      top: clamp(92px, 13vh, 132px);
+      z-index: 4;
+      width: min(360px, calc(100% - 44px));
+      color: rgba(244,241,232,.74);
+      font: 800 12px/1.75 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .stage-caption::before {
+      content: "// FIELD NOTE";
+      display: block;
+      margin-bottom: 7px;
+      color: var(--lime);
+      letter-spacing: .18em;
+    }
+
+    .field-loader {
+      position: absolute;
+      inset: 0;
+      z-index: 7;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 50% 48%, rgba(202,255,56,.1), transparent 33%),
+        rgba(5,5,5,.74);
+      backdrop-filter: blur(10px);
+      transition: opacity .45s ease, visibility .45s ease;
+    }
+
+    .field-loader.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .loader-card {
+      width: min(420px, 100%);
+      border: 1px solid rgba(202,255,56,.22);
+      padding: 20px;
+      background: rgba(7,8,8,.84);
+      box-shadow: 0 28px 80px rgba(0,0,0,.46), inset 0 0 36px rgba(202,255,56,.04);
+    }
+
+    .loader-title {
+      color: var(--lime);
+      font: 900 13px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    .loader-bar {
+      margin-top: 14px;
+      height: 8px;
+      border: 1px solid rgba(244,241,232,.18);
+      background: rgba(255,255,255,.05);
+      overflow: hidden;
+    }
+
+    .loader-bar::before {
+      content: "";
+      display: block;
+      width: var(--load-progress, 8%);
+      height: 100%;
+      background: linear-gradient(90deg, var(--lime), var(--orange));
+      box-shadow: 0 0 16px rgba(202,255,56,.45);
+      transition: width .22s ease;
+    }
+
+    .loader-copy {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .controls {
+      position: absolute;
+      left: 50%;
+      bottom: 22px;
+      z-index: 6;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 0;
+      background: rgba(9, 9, 9, .68);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 16px 48px rgba(0,0,0,.35);
+      clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+    }
+
+    button, a {
+      font: inherit;
+    }
+
+    .controls button,
+    .light-btn {
+      min-height: 38px;
+      border: 0;
+      border-radius: 0;
+      padding: 0 13px;
+      background: rgba(255,255,255,.09);
+      color: var(--ink);
+      font: 900 12px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      letter-spacing: .06em;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .controls button:hover,
+    .light-btn:hover {
+      background: rgba(255,255,255,.16);
+    }
+
+    .lights {
+      display: flex;
+      gap: 4px;
+      padding-left: 6px;
+      border-left: 1px solid var(--line);
+    }
+
+    .light-btn.is-active {
+      background: var(--lime);
+      color: #111;
+    }
+
+    .info {
+      min-height: 100vh;
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid var(--faint);
+      background:
+        linear-gradient(180deg, rgba(255,138,31,.12), transparent 27%),
+        linear-gradient(120deg, rgba(202,255,56,.05), transparent 38%),
+        rgba(9,9,9,.93);
+      box-shadow: -30px 0 80px rgba(0,0,0,.24);
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      padding-bottom: 22px;
+      border-bottom: 1px solid var(--faint);
+    }
+
+    .panel-head b {
+      color: var(--lime);
+      font: 900 12px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    .panel-head span {
+      color: var(--muted);
+      font: 700 12px/1.4 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      text-align: right;
+    }
+
+    .section {
+      padding: 22px 0;
+      border-bottom: 1px solid var(--faint);
+    }
+
+    .label {
+      margin-bottom: 10px;
+      color: var(--orange);
+      font: 900 11px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .body {
+      margin: 0;
+      color: rgba(244,241,232,.84);
+      font-size: 15px;
+      line-height: 1.72;
+    }
+
+    .spec-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .spec-card {
+      min-height: 78px;
+      padding: 12px;
+      border: 1px solid rgba(244,241,232,.12);
+      background: rgba(255,255,255,.045);
+    }
+
+    .spec-card span {
+      display: block;
+      color: rgba(244,241,232,.48);
+      font: 800 10px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .spec-card b {
+      display: block;
+      margin-top: 9px;
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.25;
+    }
+
+    .story-card {
+      position: relative;
+      margin: 0;
+      padding: 18px 18px 18px 22px;
+      border-left: 3px solid var(--lime);
+      background: linear-gradient(90deg, rgba(202,255,56,.08), rgba(255,255,255,.035));
+      color: rgba(244,241,232,.88);
+      font-size: 17px;
+      line-height: 1.65;
+    }
+
+    .story-card::before {
+      content: "“";
+      position: absolute;
+      right: 12px;
+      top: -16px;
+      color: rgba(202,255,56,.18);
+      font-size: 72px;
+      line-height: 1;
+      font-family: Georgia, serif;
+    }
+
+    .chip-wall {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip-wall span {
+      padding: 8px 10px;
+      border: 1px solid rgba(244,241,232,.14);
+      color: rgba(244,241,232,.76);
+      background: rgba(255,255,255,.04);
+      font: 800 11px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .share {
+      margin-top: auto;
+      display: grid;
+      gap: 12px;
+      padding-top: 24px;
+    }
+
+    .share button {
+      min-height: 50px;
+      border: 0;
+      border-radius: 0;
+      background: var(--orange);
+      color: #130b03;
+      font-weight: 900;
+      cursor: pointer;
+      clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+    }
+
+    .share button:hover {
+      filter: brightness(1.07);
+    }
+
+    .nav {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .nav a {
+      border: 1px solid var(--line);
+      border-radius: 0;
+      padding: 12px;
+      color: var(--ink);
+      text-align: center;
+      text-decoration: none;
+      font-weight: 800;
+      background: rgba(255,255,255,.035);
+    }
+
+    .mode-link {
+      display: block;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      padding: 12px;
+      color: var(--lime);
+      text-align: center;
+      text-decoration: none;
+      font-weight: 900;
+      background: rgba(202,255,56,.045);
+    }
+
+    .fine {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+
+    @media (max-width: 920px) {
+      .page { display: block; }
+      .stage { min-height: 64vh; }
+      model-viewer { height: 64vh; min-height: 470px; }
+      .asset-radar {
+        display: none;
+      }
+      .work-mark {
+        top: 18px;
+        left: 18px;
+      }
+      .status {
+        top: 14px;
+        right: 14px;
+      }
+      .stage-caption {
+        top: 58px;
+        left: 18px;
+        width: min(320px, calc(100% - 36px));
+        font-size: 10px;
+        line-height: 1.55;
+      }
+      .hero-copy {
+        left: 18px;
+        bottom: 84px;
+        width: calc(100% - 36px);
+      }
+      h1 {
+        font-size: clamp(40px, 13vw, 72px);
+      }
+      .student {
+        margin-top: 10px;
+      }
+      .model-note,
+      .tag-row {
+        margin-top: 10px;
+        gap: 6px;
+      }
+      .model-note span,
+      .tag-row span {
+        padding: 7px 8px;
+      }
+      .controls {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        transform: none;
+        overflow-x: auto;
+        justify-content: flex-start;
+        clip-path: none;
+      }
+      .info {
+        min-height: auto;
+        padding: 22px 20px 24px;
+        border-left: 0;
+        border-top: 1px solid var(--faint);
+      }
+      .spec-grid {
+        grid-template-columns: 1fr;
+      }
+      .visitor-gate {
+        padding: 0;
+      }
+      .gate-panel {
+        left: 18px;
+        right: 18px;
+        bottom: 28px;
+        width: auto;
+        max-width: none;
+        font-size: 16px;
+      }
+      .page.is-gate #viewer {
+        height: 100vh;
+      }
+      .gate-submit {
+        width: max-content;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page is-gate" id="page">
+    <section class="stage">
+      <model-viewer
+        id="viewer"
+        camera-controls
+        auto-rotate
+        auto-rotate-delay="0"
+        rotation-per-second="5deg"
+        orbit-sensitivity="0.28"
+        disable-pan
+        interaction-prompt="none"
+        touch-action="pan-y"
+        environment-image="neutral"
+        exposure="1"
+        shadow-intensity=".55"
+        shadow-softness=".82"
+        camera-orbit="-28deg 70deg auto"
+        camera-target="auto auto auto"
+        min-camera-orbit="-62deg 52deg auto"
+        max-camera-orbit="62deg 86deg auto"
+        field-of-view="34deg"
+        min-field-of-view="30deg"
+        max-field-of-view="40deg">
+      </model-viewer>
+
+      <div class="stage-vignette" aria-hidden="true"></div>
+      <div class="stage-rail" aria-hidden="true"></div>
+
+      <div class="gate-spotlight" id="gateSpotlight" aria-hidden="true"></div>
+
+      <div class="gate-visual" id="gateVisual" aria-hidden="true">
+        <spline-viewer url="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"></spline-viewer>
+      </div>
+
+      <div class="gate-hud" aria-hidden="true">
+        <span class="hud-c hud-tl">┌ NEXBOT-01 · VISUAL CORTEX</span>
+        <span class="hud-c hud-tr">SECTOR 7-G ┐</span>
+        <span class="hud-c hud-bl">└ 31.22°N 121.47°E</span>
+      </div>
+
+      <pre class="boot-log" id="bootLog" aria-hidden="true"></pre>
+
+      <div class="gate-ask" id="gateAsk" aria-hidden="true">
+        <div class="ask-line" id="askLine1"></div>
+        <div class="ask-line" id="askLine2"></div>
+      </div>
+
+      <div class="visitor-gate" id="visitorGate" aria-label="Visitor check entrance">
+        <form class="gate-panel" id="visitorForm">
+          <div class="gate-form">
+            <div class="gate-line"><span id="gateLineCheck"></span><span class="gate-cursor" id="gateCursor">_</span></div>
+            <label class="gate-name-line" id="gateNameLine" for="visitorName">
+              <span class="gate-prefix" id="gateNamePrompt"></span>
+              <input class="gate-input" id="visitorName" name="visitorName" autocomplete="name" placeholder="Enter name" />
+            </label>
+            <button class="gate-submit" id="gateSubmit" type="submit">&gt; GENERATE PASS</button>
+            <div class="gate-pass" id="gatePass" aria-live="polite"></div>
+          </div>
+        </form>
+      </div>
+
+      <div class="work-mark">Armory Student Showcase</div>
+      <div class="status" id="loadStatus">加载中</div>
+
+      <div class="asset-radar" aria-hidden="true">
+        <div class="radar-text" id="assetClassRadar"></div>
+      </div>
+
+      <div class="stage-caption" id="logline"></div>
+
+      <div class="hero-copy">
+        <div class="count" id="count"></div>
+        <h1 id="title"></h1>
+        <div class="student" id="student"></div>
+        <div class="model-note">
+          <span id="format"></span>
+          <span id="fileSize"></span>
+        </div>
+        <div class="tag-row" id="stageTags"></div>
+      </div>
+
+      <div class="field-loader" id="fieldLoader" aria-live="polite">
+        <div class="loader-card">
+          <div class="loader-title" id="loaderTitle">Preparing asset field</div>
+          <div class="loader-bar" aria-hidden="true"></div>
+          <p class="loader-copy" id="loaderCopy">模型正在进入展示舱，请等待 GLB 完成下载与渲染。</p>
+        </div>
+      </div>
+
+      <div class="controls" aria-label="模型浏览控制">
+        <button type="button" id="resetView">标准角度</button>
+        <button type="button" id="toggleRotate">暂停旋转</button>
+        <div class="lights" aria-label="灯光方式">
+          <button class="light-btn is-active" type="button" data-light="indoor">室内柔光</button>
+          <button class="light-btn" type="button" data-light="outdoor">室外亮光</button>
+          <button class="light-btn" type="button" data-light="flat">无阴影</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="info">
+      <div class="panel-head">
+        <b>Armory File</b>
+        <span id="archiveId"></span>
+      </div>
+
+      <section class="section">
+        <div class="label">Asset Spec</div>
+        <div class="spec-grid">
+          <div class="spec-card"><span>作者</span><b id="authorSpec"></b></div>
+          <div class="spec-card"><span>类别</span><b id="assetClass"></b></div>
+          <div class="spec-card"><span>模式</span><b id="modeSpec"></b></div>
+          <div class="spec-card"><span>体积</span><b id="sizeSpec"></b></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="label">Inspiration</div>
+        <p class="body" id="concept"></p>
+      </section>
+
+      <section class="section">
+        <div class="label">Story Seed</div>
+        <p class="story-card" id="story"></p>
+      </section>
+
+      <section class="section">
+        <div class="label">Tags</div>
+        <div class="chip-wall" id="tagWall"></div>
+      </section>
+
+      <section class="section">
+        <div class="label">Build Note</div>
+        <p class="body" id="modelData"></p>
+      </section>
+
+      <div class="share">
+        <button id="shareBtn" type="button">下载预设分享图</button>
+        <div class="nav">
+          <a id="prevLink" href="#">上一件</a>
+          <a id="nextLink" href="#">下一件</a>
+        </div>
+        <a class="mode-link" id="modeLink" href="#">切换优化版</a>
+        <p class="fine">分享图采用预生成 PNG，保证每个模型构图稳定。网页不再实时截图，避免不同模型比例导致裁切。</p>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const WORKS = [
+      {
+        id: "milk-house",
+        title: "牛奶盒房子",
+        student: "学生姓名",
+        assetClass: "CIVILIAN PROP / SAFEHOUSE",
+        logline: "把普通包装转译成游戏关卡里的安全屋道具。",
+        concept: "日常牛奶盒、临时住所、童话比例。",
+        story: "补给耗尽时，队员会把这座发光的小屋当作最后一个安全坐标。",
+        tags: ["PROP", "SAFEHOUSE", "SOFT SCI-FI"],
+        model: "模型GLB/牛奶盒房子.glb",
+        optimizedModel: "模型GLB_optimized/web/牛奶盒房子.glb",
+        shareImage: "shares/milk-house.png",
+        size: "1.8 MB",
+        optimizedSize: "507 KB",
+        orbit: "-28deg 70deg auto"
+      },
+      {
+        id: "cyber-ninja",
+        title: "赛博忍者",
+        student: "学生姓名",
+        assetClass: "WARRIOR / STEALTH UNIT",
+        logline: "高速潜入型战士，重点展示面甲、护甲层次和未来装备。",
+        concept: "传统忍者轮廓、赛博护甲、暗场发光装置。",
+        story: "他不正面宣战，只在警报响起前留下切开的门锁。",
+        tags: ["WARRIOR", "STEALTH", "CYBER ARMOR"],
+        model: "模型GLB/赛博忍者.glb",
+        optimizedModel: "模型GLB_optimized/web/赛博忍者.glb",
+        shareImage: "shares/cyber-ninja.png",
+        size: "36.7 MB",
+        optimizedSize: "6.7 MB",
+        orbit: "-30deg 68deg auto"
+      },
+      {
+        id: "robot-mantis",
+        title: "螳螂机器人",
+        student: "学生姓名",
+        assetClass: "MECH / HUNTER DRONE",
+        logline: "昆虫骨架变成机械猎手，前臂和关节是主视觉。",
+        concept: "螳螂捕猎姿态、机械关节、锐利前臂。",
+        story: "它会贴着地面移动，在目标转身前完成锁定。",
+        tags: ["MECH", "INSECTOID", "HUNTER"],
+        model: "模型GLB/螳螂机器人.glb",
+        optimizedModel: "模型GLB_optimized/web/螳螂机器人.glb",
+        shareImage: "shares/robot-mantis.png",
+        size: "27.2 MB",
+        optimizedSize: "18.5 MB",
+        orbit: "-28deg 70deg auto"
+      }
+    ];
+
+    const viewer = document.getElementById("viewer");
+    const page = document.getElementById("page");
+    const visitorGate = document.getElementById("visitorGate");
+    const visitorForm = document.getElementById("visitorForm");
+    const visitorName = document.getElementById("visitorName");
+    const gateLineCheck = document.getElementById("gateLineCheck");
+    const gateNameLine = document.getElementById("gateNameLine");
+    const gateNamePrompt = document.getElementById("gateNamePrompt");
+    const gateCursor = document.getElementById("gateCursor");
+    const gateSubmit = document.getElementById("gateSubmit");
+    const gatePass = document.getElementById("gatePass");
+    const gateAsk = document.getElementById("gateAsk");
+    const askLine1 = document.getElementById("askLine1");
+    const askLine2 = document.getElementById("askLine2");
+    const bootLog = document.getElementById("bootLog");
+    const loadStatus = document.getElementById("loadStatus");
+    const shareBtn = document.getElementById("shareBtn");
+    const fieldLoader = document.getElementById("fieldLoader");
+    const loaderTitle = document.getElementById("loaderTitle");
+    const loaderCopy = document.getElementById("loaderCopy");
+    const params = new URLSearchParams(location.search);
+    const requestedId = params.get("id");
+    const useOptimized = params.get("optimized") === "1";
+    const foundIndex = WORKS.findIndex(item => item.id === requestedId);
+    const currentIndex = foundIndex >= 0 ? foundIndex : 0;
+    const work = WORKS[currentIndex];
+    const activeModel = useOptimized && work.optimizedModel ? work.optimizedModel : work.model;
+    const activeSize = useOptimized && work.optimizedSize ? work.optimizedSize : work.size;
+    let isGateActive = true;
+    let gateTerminalStarted = false;
+    let gateFallbackTimer = null;
+    let spotlightFrame = null;
+    let gateQuestionStarted = false;
+
+    function setText(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    function workUrl(index) {
+      const item = WORKS[(index + WORKS.length) % WORKS.length];
+      const mode = useOptimized ? "&optimized=1" : "";
+      return `${location.pathname}?id=${encodeURIComponent(item.id)}${mode}`;
+    }
+
+    function modeUrl() {
+      const nextMode = useOptimized ? "" : "&optimized=1";
+      return `${location.pathname}?id=${encodeURIComponent(work.id)}${nextMode}`;
+    }
+
+    function safeName(text) {
+      return (text || "作品").replace(/[\\/:*?"<>|]/g, "").trim();
+    }
+
+    function renderTags(targetId, tags) {
+      const target = document.getElementById(targetId);
+      target.innerHTML = "";
+      (tags || []).forEach(tag => {
+        const chip = document.createElement("span");
+        chip.textContent = tag;
+        target.appendChild(chip);
+      });
+    }
+
+    function applyWork(loadModel = true) {
+      document.title = `${work.title} · ${work.student}`;
+      setText("count", `NO. ${(currentIndex + 1).toString().padStart(2, "0")}`);
+      setText("title", work.title);
+      setText("student", work.student);
+      setText("format", "GLB");
+      setText("fileSize", activeSize);
+      setText("archiveId", `${work.id.toUpperCase()} / ${useOptimized ? "OPTIMIZED" : "ORIGINAL"} / ${activeSize}`);
+      setText("assetClass", work.assetClass);
+      setText("assetClassRadar", work.assetClass.replace(" / ", "\n"));
+      setText("authorSpec", work.student);
+      setText("modeSpec", useOptimized ? "优化版" : "原始版");
+      setText("sizeSpec", activeSize);
+      setText("logline", work.logline);
+      setText("concept", work.concept);
+      setText("story", work.story);
+      setText("modelData", `GLB 展示文件，当前加载 ${useOptimized ? "兼容优化版" : "原始版"}。交互限制为小范围旋转与缩放，优先保证课堂和家长浏览时的稳定观感。`);
+      renderTags("stageTags", work.tags);
+      renderTags("tagWall", work.tags);
+      document.getElementById("prevLink").href = workUrl(currentIndex - 1);
+      document.getElementById("nextLink").href = workUrl(currentIndex + 1);
+      document.getElementById("modeLink").href = modeUrl();
+      document.getElementById("modeLink").textContent = useOptimized ? "切换原始版" : "切换优化版";
+      if (loadModel) {
+        fieldLoader.classList.remove("is-hidden");
+        fieldLoader.style.setProperty("--load-progress", "8%");
+        loaderTitle.textContent = `PREPARING ${work.title}`;
+        loaderCopy.textContent = `${work.assetClass} 正在进入展示舱。首次加载 ${activeSize}，请等待模型完成下载。`;
+        viewer.setAttribute("src", activeModel);
+        viewer.setAttribute("camera-orbit", work.orbit);
+      }
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // 网页音效：全部用 Web Audio 程序化合成，零文件、风格统一
+    const Sound = (() => {
+      let ctx = null, master = null, ambient = null, muted = false, unlocked = false;
+      const MASTER_VOL = 0.55;
+
+      function ensure() {
+        if (ctx) return;
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        ctx = new AC();
+        master = ctx.createGain();
+        master.gain.value = muted ? 0 : MASTER_VOL;
+        master.connect(ctx.destination);
+      }
+
+      function unlock() {
+        ensure();
+        if (!ctx) return;
+        if (ctx.state === "suspended") ctx.resume();
+        if (!unlocked) { unlocked = true; startAmbient(); }
+      }
+
+      function setMuted(value) {
+        muted = value;
+        if (master) master.gain.setTargetAtTime(muted ? 0 : MASTER_VOL, ctx.currentTime, 0.05);
+      }
+
+      // 环境底噪：两个略失谐低频 + 滤波噪声 + 缓慢 LFO 做“机房呼吸”
+      function startAmbient() {
+        if (!ctx || ambient) return;
+        const g = ctx.createGain();
+        g.gain.value = 0;
+        g.connect(master);
+        g.gain.setTargetAtTime(0.14, ctx.currentTime, 2.2);
+        const o1 = ctx.createOscillator(); o1.type = "sine"; o1.frequency.value = 55;
+        const o2 = ctx.createOscillator(); o2.type = "sine"; o2.frequency.value = 55.4;
+        const og = ctx.createGain(); og.gain.value = 0.4; og.connect(g);
+        o1.connect(og); o2.connect(og);
+        const buf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1);
+        const noise = ctx.createBufferSource(); noise.buffer = buf; noise.loop = true;
+        const nf = ctx.createBiquadFilter(); nf.type = "lowpass"; nf.frequency.value = 320;
+        const ng = ctx.createGain(); ng.gain.value = 0.05;
+        noise.connect(nf).connect(ng).connect(g);
+        const lfo = ctx.createOscillator(); lfo.type = "sine"; lfo.frequency.value = 0.08;
+        const lfoG = ctx.createGain(); lfoG.gain.value = 0.05;
+        lfo.connect(lfoG).connect(g.gain);
+        o1.start(); o2.start(); noise.start(); lfo.start();
+        ambient = { g, nodes: [o1, o2, noise, lfo] };
+      }
+
+      function stopAmbient() {
+        if (!ambient || !ctx) return;
+        const dying = ambient; ambient = null;
+        dying.g.gain.setTargetAtTime(0, ctx.currentTime, 1.2);
+        setTimeout(() => dying.nodes.forEach(n => { try { n.stop(); } catch (e) {} }), 2600);
+      }
+
+      function blip({ freq = 440, type = "sine", dur = 0.08, vol = 0.2, slideTo = null }) {
+        if (!ctx || ctx.state !== "running" || muted) return;
+        const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(freq, ctx.currentTime);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(vol, ctx.currentTime + 0.005);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+        if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, ctx.currentTime + dur);
+        o.connect(g).connect(master);
+        o.start(); o.stop(ctx.currentTime + dur + 0.02);
+      }
+
+      function type() { blip({ freq: 600 + Math.random() * 140, type: "triangle", dur: 0.05, vol: 0.14 }); }
+      function tick() { blip({ freq: 1150 + Math.random() * 220, type: "square", dur: 0.025, vol: 0.06 }); }
+      function confirm() { blip({ freq: 180, type: "sawtooth", dur: 0.5, vol: 0.18, slideTo: 420 }); }
+
+      function enter() {
+        blip({ freq: 140, type: "sawtooth", dur: 0.6, vol: 0.2, slideTo: 540 });
+        if (!ctx || ctx.state !== "running" || muted) return;
+        const buf = ctx.createBuffer(1, ctx.sampleRate * 0.6, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1);
+        const n = ctx.createBufferSource(); n.buffer = buf;
+        const f = ctx.createBiquadFilter(); f.type = "bandpass"; f.Q.value = 0.7;
+        f.frequency.setValueAtTime(300, ctx.currentTime);
+        f.frequency.exponentialRampToValueAtTime(3000, ctx.currentTime + 0.5);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.15);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
+        n.connect(f).connect(g).connect(master);
+        n.start(); n.stop(ctx.currentTime + 0.62);
+      }
+
+      return { unlock, setMuted, isMuted: () => muted, type, tick, confirm, enter, stopAmbient };
+    })();
+
+    async function typeText(target, text, delay = 48) {
+      target.textContent = "";
+      for (const char of text) {
+        target.textContent += char;
+        Sound.tick();
+        await sleep(delay);
+      }
+    }
+
+    async function typeAsk(target, text, delay = 130) {
+      target.classList.add("is-active");
+      target.textContent = "";
+      for (const char of text) {
+        target.textContent += char;
+        Sound.type();
+        await sleep(delay);
+      }
+      target.classList.remove("is-active");
+    }
+
+    let bootLogStarted = false;
+    async function runBootLog() {
+      if (bootLogStarted) return;
+      bootLogStarted = true;
+      const lines = [
+        "> INIT VISUAL CORTEX ........ OK",
+        "> MOUNT NEXBOT-01 MODULE .... OK",
+        "> NEURAL LINK .............. SYNCED",
+        "> SCAN ENVIRONMENT ......... 3 OBJECTS",
+        "> IDENTITY ................. UNKNOWN",
+        "> AWAITING VISITOR ......... _"
+      ];
+      for (const line of lines) {
+        bootLog.textContent += (bootLog.textContent ? "\n" : "") + line;
+        Sound.tick();
+        await sleep(460);
+      }
+    }
+
+    async function runGateTerminal() {
+      if (gateTerminalStarted) return;
+      gateTerminalStarted = true;
+      clearTimeout(gateFallbackTimer);
+      gateAsk.classList.add("is-hidden");
+      await sleep(520);
+      page.classList.add("gate-terminal-on");
+      Sound.confirm();
+      gateLineCheck.textContent = "";
+      gateNamePrompt.textContent = "";
+      gateNameLine.classList.remove("is-ready");
+      gateCursor.hidden = false;
+      await sleep(450);
+      await typeText(gateLineCheck, "VISITOR CHECK", 54);
+      await sleep(260);
+      gateNameLine.classList.add("is-ready");
+      await typeText(gateNamePrompt, "NAME:", 48);
+      visitorName.focus();
+      gateCursor.hidden = true;
+    }
+
+    // 等用户“控制机器人动几下”：移动或点击都算一拍，两拍之间需有间隔；超时则兜底放行
+    function waitRobotBeats(beats = 2, timeout = 9000) {
+      return new Promise(resolve => {
+        let count = 0, acc = 0, lastX = null, lastY = null, lastBeatAt = 0;
+        const threshold = Math.max(window.innerWidth, 700) * 0.85;
+        const finish = () => {
+          window.removeEventListener("pointermove", onMove);
+          window.removeEventListener("pointerdown", onDown);
+          clearTimeout(timer);
+          resolve();
+        };
+        const beat = () => { if (++count >= beats) finish(); };
+        const onMove = event => {
+          if (gateTerminalStarted) return finish();
+          if (lastX !== null) acc += Math.hypot(event.clientX - lastX, event.clientY - lastY);
+          lastX = event.clientX; lastY = event.clientY;
+          const now = performance.now();
+          if (acc >= threshold && now - lastBeatAt > 450) { acc = 0; lastBeatAt = now; beat(); }
+        };
+        const onDown = () => {
+          if (gateTerminalStarted) return finish();
+          const now = performance.now();
+          if (now - lastBeatAt > 450) { lastBeatAt = now; beat(); }
+        };
+        const timer = setTimeout(finish, timeout);
+        window.addEventListener("pointermove", onMove);
+        window.addEventListener("pointerdown", onDown);
+      });
+    }
+
+    async function runGateQuestions() {
+      if (gateQuestionStarted) return;
+      gateQuestionStarted = true;
+      page.classList.add("gate-question-on");
+      await sleep(3400);                         // 机器人进场、让用户先看清/上手
+      if (gateTerminalStarted) return;
+      await typeAsk(askLine1, "WHO AM I ?");
+      await waitRobotBeats(2);                   // 控制机器人动两下，再冒出下一个念头
+      if (gateTerminalStarted) return;
+      await typeAsk(askLine2, "WHERE AM I ?");
+      await sleep(500);
+      runBootLog();                              // 两句念头出完后，右侧系统日志才上线
+      gateFallbackTimer = setTimeout(runGateTerminal, 7000);
+    }
+
+    function setupGateTriggers() {
+      const unlockAudio = () => {
+        Sound.unlock();
+        window.removeEventListener("pointerdown", unlockAudio);
+        window.removeEventListener("keydown", unlockAudio);
+      };
+      window.addEventListener("pointerdown", unlockAudio);
+      window.addEventListener("keydown", unlockAudio);
+
+      window.addEventListener("pointermove", event => {
+        if (!spotlightFrame) {
+          const x = event.clientX;
+          const y = event.clientY;
+          spotlightFrame = requestAnimationFrame(() => {
+            page.style.setProperty("--spot-x", `${(x / window.innerWidth * 100).toFixed(2)}%`);
+            page.style.setProperty("--spot-y", `${(y / window.innerHeight * 100).toFixed(2)}%`);
+            spotlightFrame = null;
+          });
+        }
+      });
+
+      window.addEventListener("keydown", event => {
+        if (!isGateActive || gateTerminalStarted || !gateQuestionStarted) return;
+        if (event.key === "Enter" || event.key === "Tab") {
+          event.preventDefault();
+          runGateTerminal();
+        }
+      });
+
+      window.addEventListener("pointerdown", event => {
+        if (!isGateActive || gateTerminalStarted || !gateQuestionStarted) return;
+        if (event.detail >= 2) runGateTerminal();
+      });
+
+      runGateQuestions();
+    }
+
+    let modelViewerLoading = null;
+    function loadModelViewer() {
+      if (modelViewerLoading) return modelViewerLoading;
+      modelViewerLoading = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.type = "module";
+        script.src = "https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js";
+        script.onload = () => customElements.whenDefined("model-viewer").then(resolve);
+        script.onerror = () => reject(new Error("model-viewer 脚本加载失败"));
+        document.head.appendChild(script);
+      });
+      return modelViewerLoading;
+    }
+
+    const WORKS_MAP = {
+      "黄歧":  "model-showcase-ninja2.html",
+      "杨琪帆": "model-showcase-predator-new.html",
+      "亢知行": "model-showcase-capsule.html",
+      "朱梓彧": "model-showcase-jazz.html"
+    };
+
+    function enterModelField(name) {
+      const cleanName = (name || "").trim() || "VISITOR";
+      const target = WORKS_MAP[cleanName] || "model-showcase-denied.html";
+      gatePass.textContent = `PASS GENERATED / ${cleanName.toUpperCase()} / ENTERING FIELD`;
+      gateSubmit.disabled = true;
+      gateSubmit.textContent = "> ENTERING FIELD";
+      Sound.enter();
+      Sound.stopAmbient();
+
+      setTimeout(() => {
+        window.location.href = target;
+      }, 760);
+
+      setTimeout(() => {
+        visitorGate.hidden = true;
+      }, 1500);
+    }
+
+    function lockCameraRange() {
+      const orbit = viewer.getCameraOrbit && viewer.getCameraOrbit();
+      const radius = orbit && Number.isFinite(orbit.radius) ? orbit.radius : null;
+      if (!radius) return;
+      viewer.setAttribute("camera-target", "auto auto auto");
+      viewer.minCameraOrbit = `-62deg 52deg ${(radius * .82).toFixed(4)}m`;
+      viewer.maxCameraOrbit = `62deg 86deg ${(radius * 1.24).toFixed(4)}m`;
+      viewer.cameraOrbit = work.orbit.replace("auto", `${radius.toFixed(4)}m`);
+      viewer.jumpCameraToGoal();
+    }
+
+    function applyLighting(mode) {
+      const presets = {
+        indoor: { env: "neutral", exposure: "1", shadow: ".55", softness: ".82" },
+        outdoor: { env: "neutral", exposure: "1.32", shadow: ".32", softness: ".5" },
+        flat: { env: "legacy", exposure: "1.08", shadow: "0", softness: "1" }
+      };
+      const preset = presets[mode] || presets.indoor;
+      viewer.setAttribute("environment-image", preset.env);
+      viewer.setAttribute("exposure", preset.exposure);
+      viewer.setAttribute("shadow-intensity", preset.shadow);
+      viewer.setAttribute("shadow-softness", preset.softness);
+      document.querySelectorAll(".light-btn").forEach(btn => {
+        btn.classList.toggle("is-active", btn.dataset.light === mode);
+      });
+    }
+
+    document.getElementById("resetView").addEventListener("click", () => {
+      viewer.cameraOrbit = work.orbit;
+      viewer.fieldOfView = "34deg";
+      viewer.jumpCameraToGoal();
+    });
+
+    document.getElementById("toggleRotate").addEventListener("click", event => {
+      const on = !viewer.hasAttribute("auto-rotate");
+      if (on) viewer.setAttribute("auto-rotate", "");
+      else viewer.removeAttribute("auto-rotate");
+      event.currentTarget.textContent = on ? "暂停旋转" : "继续旋转";
+    });
+
+    document.querySelectorAll(".light-btn").forEach(button => {
+      button.addEventListener("click", () => applyLighting(button.dataset.light));
+    });
+
+    viewer.addEventListener("progress", event => {
+      const pct = Math.round((event.detail.totalProgress || 0) * 100);
+      loadStatus.textContent = pct >= 100 ? "渲染中" : `加载 ${pct}%`;
+      fieldLoader.style.setProperty("--load-progress", `${Math.max(8, pct)}%`);
+      loaderCopy.textContent = pct >= 100 ? "模型下载完成，正在建立展示视角。" : `模型数据加载中 ${pct}% / ${activeSize}`;
+    });
+
+    viewer.addEventListener("load", () => {
+      if (isGateActive) {
+        loadStatus.textContent = "等待访客";
+      } else {
+        loadStatus.textContent = "可浏览";
+        fieldLoader.classList.add("is-hidden");
+        lockCameraRange();
+        if (matchMedia("(max-width: 920px)").matches) {
+          viewer.setAttribute("shadow-intensity", ".28");
+          viewer.setAttribute("rotation-per-second", "3deg");
+        }
+      }
+    });
+
+    viewer.addEventListener("error", () => {
+      loadStatus.textContent = "模型加载失败";
+      loaderTitle.textContent = "ASSET LOAD FAILED";
+      loaderCopy.textContent = "请确认页面通过本地服务器打开，并检查模型文件路径。";
+    });
+
+    async function downloadShareImage() {
+      if (!work.shareImage) {
+        alert("这个作品还没有配置预设分享图。");
+        return;
+      }
+
+      if (location.protocol === "file:") {
+        alert("请用本地服务器打开页面后再下载分享图。");
+        return;
+      }
+
+      try {
+        const res = await fetch(work.shareImage, { method: "HEAD" });
+        if (!res.ok) throw new Error(`missing ${res.status}`);
+      } catch (error) {
+        alert(`还没有生成预设分享图：${work.shareImage}`);
+        return;
+      }
+
+      const link = document.createElement("a");
+      link.href = work.shareImage;
+      link.download = `${safeName(work.student)}_${safeName(work.title)}_分享图.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    shareBtn.addEventListener("click", downloadShareImage);
+    visitorName.addEventListener("input", () => {
+      gateSubmit.classList.toggle("is-visible", visitorName.value.trim().length > 0);
+    });
+
+    visitorForm.addEventListener("submit", event => {
+      event.preventDefault();
+      if (!visitorName.value.trim()) {
+        visitorName.focus();
+        return;
+      }
+      enterModelField(visitorName.value);
+    });
+
+    async function boot() {
+      applyWork(false);
+      applyLighting("indoor");
+
+      if (location.protocol === "file:") {
+        loadStatus.textContent = "建议用本地服务器打开";
+      }
+
+      setupGateTriggers();
+    }
+
+    boot();
+  </script>
+</body>
+</html>
