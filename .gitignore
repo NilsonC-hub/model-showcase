@@ -34,8 +34,7 @@ model-showcase-predator.html
 *.jpeg
 .playwright-mcp/
 
-# 文档（不上线）
-*.md
+# 旧指令文档（不上线）
 模型展示页_给Qwen的指令.md
 
 # shares 分享图（按需另行管理）
