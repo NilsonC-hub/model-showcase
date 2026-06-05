@@ -3,19 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MODEL VAULT // AUTOBOT JAZZ</title>
+<title>MODEL VAULT // CYBER ARMS</title>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#070708;--lime:#caff38;--lime-soft:#d8ff6a;--lime-dim:rgba(202,255,56,.16);--lime-glow:rgba(202,255,56,.4);--lime-glow-strong:rgba(202,255,56,.62);--orange:#ff8a1f;--orange-glow:rgba(255,138,31,.45);--ink:#f4f1e8;--muted:rgba(244,241,232,.6);--font:ui-monospace,"Cascadia Mono","Consolas","Courier New",monospace;--grid-color:rgba(244,241,232,.035);--grid-size:44px}
+:root{
+  --bg:#070708;
+  --lime:#caff38;            /* 登录页柠檬绿，替代旧的冷荧光绿 */
+  --lime-soft:#d8ff6a;
+  --lime-dim:rgba(202,255,56,.16);
+  --lime-glow:rgba(202,255,56,.4);
+  --lime-glow-strong:rgba(202,255,56,.62);
+  --orange:#ff8a1f;          /* 登录页辅助橙，用于作者/强调 */
+  --orange-glow:rgba(255,138,31,.45);
+  --ink:#f4f1e8;             /* 登录页米白正文 */
+  --muted:rgba(244,241,232,.6);
+  --font:ui-monospace,"Cascadia Mono","Consolas","Courier New",monospace;
+  --grid-color:rgba(244,241,232,.035);
+  --grid-size:44px;
+}
 html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--font)}
-body{background-image:radial-gradient(circle at 18% 16%,rgba(202,255,56,.06),transparent 30%),radial-gradient(circle at 80% 70%,rgba(255,138,31,.05),transparent 32%),linear-gradient(var(--grid-color) 1px,transparent 1px),linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);background-size:auto,auto,var(--grid-size) var(--grid-size),var(--grid-size) var(--grid-size)}
+body{background-image:
+  radial-gradient(circle at 18% 16%,rgba(202,255,56,.06),transparent 30%),
+  radial-gradient(circle at 80% 70%,rgba(255,138,31,.05),transparent 32%),
+  linear-gradient(var(--grid-color) 1px,transparent 1px),
+  linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);
+  background-size:auto,auto,var(--grid-size) var(--grid-size),var(--grid-size) var(--grid-size)}
+
+/* ---------- LOADING ---------- */
 #loadingScreen{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s ease,visibility .8s ease}
 #loadingScreen.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
 .load-corner-tl{position:absolute;top:24px;left:28px;font-size:14px;letter-spacing:3px;color:var(--lime);opacity:.75;text-shadow:0 0 10px var(--lime-glow)}
 .load-corner-bl{position:absolute;bottom:18px;left:28px;font-size:11px;letter-spacing:2px;color:var(--muted)}
 .load-corner-br{position:absolute;bottom:18px;right:28px;font-size:11px;letter-spacing:2px;color:var(--muted)}
 .hex-logo{width:130px;height:150px;margin-bottom:28px;animation:hex-pulse 2.8s ease-in-out infinite}
-@keyframes hex-pulse{0%,100%{filter:drop-shadow(0 0 8px rgba(202,255,56,.7)) drop-shadow(0 0 24px rgba(202,255,56,.3))}50%{filter:drop-shadow(0 0 16px rgba(202,255,56,.95)) drop-shadow(0 0 48px rgba(202,255,56,.5))}}
+@keyframes hex-pulse{
+  0%,100%{filter:drop-shadow(0 0 8px rgba(202,255,56,.7)) drop-shadow(0 0 24px rgba(202,255,56,.3))}
+  50%{filter:drop-shadow(0 0 16px rgba(202,255,56,.95)) drop-shadow(0 0 48px rgba(202,255,56,.5))}
+}
 .load-title{font-size:clamp(30px,4.5vw,52px);font-weight:700;letter-spacing:clamp(10px,2.5vw,24px);color:var(--lime);text-shadow:0 0 20px var(--lime-glow),0 0 50px rgba(202,255,56,.2);margin-bottom:8px}
 .load-subtitle{font-size:13px;letter-spacing:5px;color:var(--lime-soft);opacity:.65;margin-bottom:48px}
 .load-terminal{position:absolute;top:44px;right:44px;width:clamp(280px,24vw,380px);border:1px solid var(--lime-dim);background:rgba(7,7,8,.88);padding:16px 18px;font-size:11px;line-height:1.9;color:var(--lime-soft)}
@@ -35,6 +59,8 @@ body{background-image:radial-gradient(circle at 18% 16%,rgba(202,255,56,.06),tra
 .load-progress-fill{width:0%;height:100%;background:linear-gradient(90deg,var(--lime),var(--lime-soft));border-radius:4px;box-shadow:0 0 14px var(--lime-glow);transition:width .15s linear;position:relative}
 .load-progress-fill::after{content:'';position:absolute;right:0;top:50%;transform:translateY(-50%);width:18px;height:18px;border-radius:50%;background:var(--lime);box-shadow:0 0 16px var(--lime-glow-strong)}
 .load-progress-pct{font-size:15px;font-weight:700;min-width:46px;text-align:right;color:var(--lime);text-shadow:0 0 10px var(--lime-glow)}
+
+/* ---------- DETAIL ---------- */
 #detailScreen{position:fixed;inset:0;z-index:50;display:flex;opacity:0;visibility:hidden;transition:opacity .7s ease .4s,visibility .7s ease .4s}
 #detailScreen.is-on{opacity:1;visibility:visible}
 .detail-left{flex:1;position:relative;display:flex;align-items:center;justify-content:center;min-width:0;overflow:hidden}
@@ -42,11 +68,24 @@ body{background-image:radial-gradient(circle at 18% 16%,rgba(202,255,56,.06),tra
 .radar-ring::before{content:'';position:absolute;inset:14%;border-radius:50%;border:1px solid rgba(202,255,56,.08)}
 .radar-ring::after{content:'';position:absolute;inset:32%;border-radius:50%;border:1px dashed rgba(202,255,56,.06)}
 #detailScreen.is-on .radar-ring{animation:radar-init 7.2s ease-out .3s 1 forwards}
-@keyframes radar-init{0%{opacity:0}10%{opacity:.7;border-color:rgba(202,255,56,.45);box-shadow:0 0 28px rgba(202,255,56,.18)}22%{opacity:.7;border-color:rgba(202,255,56,.45);box-shadow:0 0 28px rgba(202,255,56,.18)}33%{opacity:.1}42%{opacity:.55;border-color:rgba(202,255,56,.35);box-shadow:0 0 20px rgba(202,255,56,.13)}52%{opacity:.55;border-color:rgba(202,255,56,.35);box-shadow:0 0 20px rgba(202,255,56,.13)}63%{opacity:.08}72%{opacity:.38;border-color:rgba(202,255,56,.24);box-shadow:0 0 14px rgba(202,255,56,.08)}82%{opacity:.38;border-color:rgba(202,255,56,.24);box-shadow:0 0 14px rgba(202,255,56,.08)}100%{opacity:.5;border-color:rgba(202,255,56,.16);box-shadow:0 0 100px rgba(202,255,56,.06),inset 0 0 100px rgba(202,255,56,.04)}}
+@keyframes radar-init{
+  0%   {opacity:0}
+  10%  {opacity:.7;border-color:rgba(202,255,56,.45);box-shadow:0 0 28px rgba(202,255,56,.18)}
+  22%  {opacity:.7;border-color:rgba(202,255,56,.45);box-shadow:0 0 28px rgba(202,255,56,.18)}
+  33%  {opacity:.1}
+  42%  {opacity:.55;border-color:rgba(202,255,56,.35);box-shadow:0 0 20px rgba(202,255,56,.13)}
+  52%  {opacity:.55;border-color:rgba(202,255,56,.35);box-shadow:0 0 20px rgba(202,255,56,.13)}
+  63%  {opacity:.08}
+  72%  {opacity:.38;border-color:rgba(202,255,56,.24);box-shadow:0 0 14px rgba(202,255,56,.08)}
+  82%  {opacity:.38;border-color:rgba(202,255,56,.24);box-shadow:0 0 14px rgba(202,255,56,.08)}
+  100% {opacity:.5;border-color:rgba(202,255,56,.16);box-shadow:0 0 100px rgba(202,255,56,.06),inset 0 0 100px rgba(202,255,56,.04)}
+}
+/* 伪 mesh 扫描显形：进入展示界面时一条绿光线纵向扫一遍 */
 model-viewer{width:100%;height:100%;--poster-color:transparent;outline:none}
 .detail-right{width:clamp(360px,38vw,500px);border-left:1px solid var(--lime-dim);background:rgba(7,7,8,.92);overflow-y:auto;padding:40px 34px 56px;display:flex;flex-direction:column;gap:24px}
 .detail-right::-webkit-scrollbar{width:4px}
 .detail-right::-webkit-scrollbar-thumb{background:var(--lime-dim);border-radius:2px}
+/* 标题块：模型名放大醒目，作者用橙色单列强调 */
 .panel-title{font-size:clamp(36px,4.4vw,56px);font-weight:800;letter-spacing:4px;color:var(--lime);text-shadow:0 0 22px var(--lime-glow),0 0 60px rgba(202,255,56,.18);line-height:1.05}
 .panel-subtitle{margin-top:8px;font-size:13px;letter-spacing:5px;color:var(--lime-soft);opacity:.7}
 .panel-author{margin-top:14px;font-size:16px;font-weight:700;letter-spacing:3px;color:var(--orange);text-shadow:0 0 14px var(--orange-glow)}
@@ -88,19 +127,37 @@ model-viewer{width:100%;height:100%;--poster-color:transparent;outline:none}
   <div class="hex-logo">
     <svg viewBox="0 0 130 150" xmlns="http://www.w3.org/2000/svg" width="130" height="150">
       <defs>
-        <filter id="glow-soft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-        <filter id="glow-icon" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <filter id="glow-soft" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="2.5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-icon" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="4" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
       </defs>
-      <polygon points="65,4 124,37 124,113 65,146 6,113 6,37" fill="none" stroke="#caff38" stroke-width="1.4" opacity="0.75" filter="url(#glow-soft)"/>
-      <polygon points="65,18 110,44 110,106 65,132 20,106 20,44" fill="none" stroke="#caff38" stroke-width="0.7" opacity="0.28"/>
+      <!-- outer hex ring -->
+      <polygon points="65,4 124,37 124,113 65,146 6,113 6,37"
+        fill="none" stroke="#caff38" stroke-width="1.4" opacity="0.75" filter="url(#glow-soft)"/>
+      <!-- inner hex ring -->
+      <polygon points="65,18 110,44 110,106 65,132 20,106 20,44"
+        fill="none" stroke="#caff38" stroke-width="0.7" opacity="0.28"/>
+      <!-- corner tick marks at 6 vertices of outer hex -->
       <g stroke="#caff38" stroke-width="2" opacity="0.9" stroke-linecap="round" filter="url(#glow-soft)">
-        <line x1="58" y1="4" x2="72" y2="4"/><line x1="58" y1="146" x2="72" y2="146"/>
-        <line x1="6" y1="37" x2="6" y2="51"/><line x1="124" y1="37" x2="124" y2="51"/>
-        <line x1="6" y1="99" x2="6" y2="113"/><line x1="124" y1="99" x2="124" y2="113"/>
+        <line x1="58" y1="4"  x2="72" y2="4"/>
+        <line x1="58" y1="146" x2="72" y2="146"/>
+        <line x1="6"  y1="37" x2="6"  y2="51"/>
+        <line x1="124" y1="37" x2="124" y2="51"/>
+        <line x1="6"  y1="99" x2="6"  y2="113"/>
+        <line x1="124" y1="99" x2="124" y2="113"/>
       </g>
+      <!-- central chevron icon (upward, like reference "A" shape) -->
       <g filter="url(#glow-icon)" fill="#caff38">
+        <!-- outer chevron -->
         <polygon points="65,38 98,96 88,96 65,57 42,96 32,96" opacity="0.95"/>
+        <!-- crossbar -->
         <rect x="46" y="77" width="38" height="5" rx="1" opacity="0.85"/>
+        <!-- center dot -->
         <circle cx="65" cy="102" r="3.5" opacity="0.6"/>
       </g>
     </svg>
@@ -127,7 +184,7 @@ model-viewer{width:100%;height:100%;--poster-color:transparent;outline:none}
   <div class="detail-left">
     <div class="radar-ring"></div>
     <model-viewer id="viewer"
-      src="模型GLB_optimized/web/变形金刚-爵士-朱.glb"
+      src="模型GLB_optimized/web/赛博枪械-何思源.glb"
       camera-controls rotation-per-second="6deg"
       disable-pan interaction-prompt="none" environment-image="neutral"
       exposure="1" shadow-intensity="0.6" shadow-softness="0.8"
@@ -138,29 +195,29 @@ model-viewer{width:100%;height:100%;--poster-color:transparent;outline:none}
   </div>
   <div class="detail-right">
     <div>
-      <div class="panel-title">AUTOBOT JAZZ</div>
-      <div class="panel-subtitle">ELITE AUTOBOT INFILTRATOR</div>
-      <div class="panel-author"><span class="by">BY</span>朱梓彧</div>
+      <div class="panel-title">CYBER ARMS</div>
+      <div class="panel-subtitle">ENERGY WEAPON SYSTEM</div>
+      <div class="panel-author"><span class="by">BY</span>何思源</div>
     </div>
-    <div><div class="section-label">ORIGIN STORY</div><div class="origin-text">来自赛博坦的优雅战士。爵士以速度与风格著称，在战场上如同一道闪电。它不是最强的博派，但绝对是最酷的那个——音乐与战斗，它都享受其中。</div></div>
+    <div><div class="section-label">ORIGIN STORY</div><div class="origin-text">模块化能量武器平台。电磁轨道与等离子腔体可快速切换，握把内嵌生物识别保险。每一发都是精确计算后的致命输出。</div></div>
     <div>
       <div class="section-label">CREATIVE METRICS</div>
       <div class="dims-grid">
-        <div class="dim-item"><div class="dim-header"><span><span class="dim-label">COMPLETION</span><span class="dim-label-cn">完成度</span></span><span class="dim-pct">93%</span></div><div class="dim-track"><div class="dim-fill" data-pct="93"></div></div></div>
-        <div class="dim-item"><div class="dim-header"><span><span class="dim-label">DETAIL</span><span class="dim-label-cn">细节</span></span><span class="dim-pct">91%</span></div><div class="dim-track"><div class="dim-fill" data-pct="91"></div></div></div>
-        <div class="dim-item"><div class="dim-header"><span><span class="dim-label">CREATIVITY</span><span class="dim-label-cn">创意</span></span><span class="dim-pct">96%</span></div><div class="dim-track"><div class="dim-fill" data-pct="96"></div></div></div>
-        <div class="dim-item"><div class="dim-header"><span><span class="dim-label">DIFFICULTY</span><span class="dim-label-cn">难度</span></span><span class="dim-pct">89%</span></div><div class="dim-track"><div class="dim-fill" data-pct="89"></div></div></div>
+        <div class="dim-item"><div class="dim-header"><span><span class="dim-label">COMPLETION</span><span class="dim-label-cn">完成度</span></span><span class="dim-pct">82%</span></div><div class="dim-track"><div class="dim-fill" data-pct="82"></div></div></div>
+        <div class="dim-item"><div class="dim-header"><span><span class="dim-label">DETAIL</span><span class="dim-label-cn">细节</span></span><span class="dim-pct">85%</span></div><div class="dim-track"><div class="dim-fill" data-pct="85"></div></div></div>
+        <div class="dim-item"><div class="dim-header"><span><span class="dim-label">CREATIVITY</span><span class="dim-label-cn">创意</span></span><span class="dim-pct">80%</span></div><div class="dim-track"><div class="dim-fill" data-pct="80"></div></div></div>
+        <div class="dim-item"><div class="dim-header"><span><span class="dim-label">DIFFICULTY</span><span class="dim-label-cn">难度</span></span><span class="dim-pct">74%</span></div><div class="dim-track"><div class="dim-fill" data-pct="74"></div></div></div>
       </div>
     </div>
     <div><div class="section-label">LIGHTING</div><div class="light-toggle"><div class="light-toggle-track" id="lightToggle"><div class="light-toggle-knob"></div></div><span class="light-toggle-label" id="lightLabel">NORMAL</span></div></div>
     <div><div class="section-label">3D VIEW CONTROLS</div><div class="controls-row"><button class="ctrl-btn" id="btnRotate"><span class="ctrl-icon">&#x27F3;</span>ROTATE</button><button class="ctrl-btn" id="btnZoom"><span class="ctrl-icon">&#x2295;</span>ZOOM</button><button class="ctrl-btn" id="btnReset"><span class="ctrl-icon">&#x2299;</span>RESET</button></div></div>
-    <div class="meta-info">FORMAT: GLB<br>SIZE: 3.8 MB<br>BUILD: webp 2048 + Draco</div>
+    <div class="meta-info">FORMAT: GLB<br>SIZE: 2.0 MB<br>BUILD: webp 2048 + Draco</div>
   </div>
 </div>
 <nav class="page-nav" id="pageNav">
-  <a class="nav-link" href="model-showcase-capsule.html">← CAPSULE DEPOT</a>
-  <span class="nav-counter">04 / 13</span>
-  <a class="nav-link" href="model-showcase-pinkgirl.html">PINK COAT GIRL →</a>
+  <a class="nav-link" href="model-showcase-mantisbot.html">← ROBOT MANTIS</a>
+  <span class="nav-counter">13 / 13</span>
+  <a class="nav-link" href="model-showcase-ninja2.html">CYBER NINJA MK-II →</a>
 </nav>
 <script>window.ModelViewerElement=window.ModelViewerElement||{};window.ModelViewerElement.dracoDecoderLocation="draco/";</script>
 <script type="module" src="./model-viewer.min.js"></script>
