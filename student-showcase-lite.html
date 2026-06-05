@@ -112,8 +112,7 @@
     }
 
     .page.gate-terminal-on .stage::after {
-      opacity: .22;
-      animation: scanSweep 7.5s linear infinite;
+      opacity: 0;
     }
 
     .gate-spotlight {
@@ -991,6 +990,18 @@
       }
       .gate-submit {
         width: max-content;
+      }
+      /* 手机端：日志截断，防止溢出右边缘 */
+      .boot-log {
+        max-width: calc(100vw - 24px);
+        font-size: 9px;
+        overflow: hidden;
+        right: 12px;
+      }
+      /* 手机端：HUD 角标字体缩小 */
+      .hud-c {
+        font-size: 9px;
+        letter-spacing: .06em;
       }
     }
   </style>
